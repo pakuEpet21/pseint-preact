@@ -209,14 +209,18 @@ function TooltipContent({
 
   return createPortal(
     <div
-      style={{ position: "fixed", top: position.top, left: position.left, transform: position.transform, transformOrigin, zIndex: 50 }}
-      className={cn(
-        "pointer-events-none z-50 inline-flex w-fit max-w-xs origin-(--transform-origin) items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-xs text-background",
-        visible ? `animate-in fade-in-0 zoom-in-95 ${slideClass}` : "animate-out fade-out-0 zoom-out-95",
-        className
-      )}
+      style={{ position: "fixed", top: position.top, left: position.left, transform: position.transform, zIndex: 50 }}
     >
-      {children}
+      <div
+        style={{ transformOrigin }}
+        className={cn(
+          "pointer-events-none z-50 inline-flex w-fit max-w-xs items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-xs text-background",
+          visible ? `animate-in fade-in-0 zoom-in-95 ${slideClass}` : "animate-out fade-out-0 zoom-out-95",
+          className
+        )}
+      >
+        {children}
+      </div>
     </div>,
     document.body
   )
