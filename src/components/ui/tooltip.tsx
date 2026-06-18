@@ -22,13 +22,7 @@ function useTooltipContext() {
   return ctx
 }
 
-function TooltipProvider({
-  delay = 0,
-  children,
-}: {
-  delay?: number
-  children: React.ReactNode
-}) {
+function Tooltip({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
   const [state, setState] = React.useState<TooltipState>({ open: false, triggerRect: null })
   const hoverPopupRef = React.useRef(false)
   return (
@@ -36,10 +30,6 @@ function TooltipProvider({
       {children}
     </TooltipContext.Provider>
   )
-}
-
-function Tooltip({ children }: { children: React.ReactNode }) {
-  return <>{children}</>
 }
 
 interface TooltipTriggerProps {
@@ -232,4 +222,4 @@ function TooltipContent({
   )
 }
 
-export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider }
+export { Tooltip, TooltipTrigger, TooltipContent }

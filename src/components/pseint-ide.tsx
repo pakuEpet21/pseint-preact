@@ -34,7 +34,6 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-  TooltipProvider,
 } from "@/components/ui/tooltip"
 import {
   runPseint,
@@ -541,8 +540,7 @@ export function PseintIDE() {
   }
 
   return (
-    <TooltipProvider delay={50}>
-      <div className="flex h-screen flex-col bg-background text-foreground">
+    <div className="flex h-screen flex-col bg-background text-foreground">
       {/* Top bar */}
       <header className="flex items-center justify-between border-b border-border bg-sidebar px-4 py-2">
         <div className="flex items-center gap-2">
@@ -565,8 +563,42 @@ export function PseintIDE() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+       
+          <Tooltip delay={50}>
+            <TooltipTrigger asChild>
+              <button
+                onClick={openFile}
+                className="flex cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent"
+              >
+                <FolderOpen className="size-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Abrir archivo</TooltipContent>
+          </Tooltip>
           <DropdownMenu>
-            <Tooltip>
+            <Tooltip delay={50}>
+              <TooltipTrigger asChild>
+                <DropdownMenuTrigger
+                  className="flex cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <Download className="size-4" />
+                </DropdownMenuTrigger>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Descargar archivo</TooltipContent>
+            </Tooltip>
+            <DropdownMenuContent side="left" align="start" className="w-56">
+              <div className="px-2 py-1.5 text-sm font-medium">Descargar como</div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => downloadFile("psc")}>
+                Archivo PSeInt (.psc)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => downloadFile("txt")}>
+                Documento de texto (.txt)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+            <DropdownMenu>
+            <Tooltip delay={50}>
               <TooltipTrigger asChild>
                 <DropdownMenuTrigger
                   className="flex cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -576,7 +608,7 @@ export function PseintIDE() {
               </TooltipTrigger>
               <TooltipContent side="bottom">Configuración</TooltipContent>
             </Tooltip>
-            <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuContent side="left" align="start" className="w-56">
               <div className="px-2 py-1.5 text-sm font-medium">Tema visual</div>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => setTheme("light")}>
@@ -599,7 +631,7 @@ export function PseintIDE() {
               <div className="flex items-center justify-between px-2 py-1">
                 <button
                   type="button"
-                  onClick={() => setFontSize((s) => Math.max(10, s - 1))}
+                  onClick={(e) => { e.stopPropagation(); setFontSize((s) => Math.max(10, s - 1)) }}
                   className="flex size-7 items-center justify-center rounded-md border border-border text-sm hover:bg-accent"
                   aria-label="Disminuir fuente"
                 >
@@ -608,7 +640,7 @@ export function PseintIDE() {
                 <span className="text-sm tabular-nums">{fontSize}px</span>
                 <button
                   type="button"
-                  onClick={() => setFontSize((s) => Math.min(24, s + 1))}
+                  onClick={(e) => { e.stopPropagation(); setFontSize((s) => Math.min(24, s + 1)) }}
                   className="flex size-7 items-center justify-center rounded-md border border-border text-sm hover:bg-accent"
                   aria-label="Aumentar fuente"
                 >
@@ -625,50 +657,6 @@ export function PseintIDE() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={openFile}
-                className="flex cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent"
-              >
-                <FolderOpen className="size-4" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">Abrir archivo</TooltipContent>
-          </Tooltip>
-          <DropdownMenu>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <DropdownMenuTrigger
-                  className="flex cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  <Download className="size-4" />
-                </DropdownMenuTrigger>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">Descargar archivo</TooltipContent>
-            </Tooltip>
-            <DropdownMenuContent align="end" className="w-56">
-              <div className="px-2 py-1.5 text-sm font-medium">Descargar como</div>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => downloadFile("psc")}>
-                Archivo PSeInt (.psc)
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => downloadFile("txt")}>
-                Documento de texto (.txt)
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={formatActiveTab}
-                className="flex cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent"
-              >
-                <Sparkles className="size-4" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">Formatear código (Ctrl+Shift+F)</TooltipContent>
-          </Tooltip>
           {running ? (
             <button
               onClick={stop}
@@ -767,7 +755,7 @@ export function PseintIDE() {
                 </div>
               ))}
             </div>
-            <Tooltip>
+            <Tooltip delay={50}>
               <TooltipTrigger asChild>
                 <button
                   onClick={addTab}
@@ -779,7 +767,18 @@ export function PseintIDE() {
               </TooltipTrigger>
               <TooltipContent side="bottom">Nueva pestaña</TooltipContent>
             </Tooltip>
-            <Tooltip>
+             <Tooltip delay={50}>
+            <TooltipTrigger asChild>
+              <button
+                onClick={formatActiveTab}
+                  className="shrink-0 cursor-pointer rounded-md  px-2.5 py-2 text-primary transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <Sparkles className="size-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Formatear código</TooltipContent>
+          </Tooltip>
+            <Tooltip delay={50}>
               <TooltipTrigger asChild>
                 <button
                   onClick={undo}
@@ -790,9 +789,9 @@ export function PseintIDE() {
                   <Undo2 className="size-4" />
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="bottom">Deshacer (Ctrl+Z)</TooltipContent>
+              <TooltipContent side="bottom">Deshacer</TooltipContent>
             </Tooltip>
-            <Tooltip>
+            <Tooltip delay={50}>
               <TooltipTrigger asChild>
                 <button
                   onClick={redo}
@@ -803,7 +802,7 @@ export function PseintIDE() {
                   <Redo2 className="size-4" />
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="bottom">Rehacer (Ctrl+Y)</TooltipContent>
+              <TooltipContent side="bottom">Rehacer</TooltipContent>
             </Tooltip>
             <button
               onClick={() => setShowOps(true)}
@@ -911,6 +910,5 @@ export function PseintIDE() {
         </div>
       )}
       </div>
-    </TooltipProvider>
   )
 }
