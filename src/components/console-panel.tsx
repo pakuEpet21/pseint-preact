@@ -1,13 +1,11 @@
 import { useEffect, useRef, useState } from "preact/hooks"
-import { Eraser, ChevronRight, Terminal, Keyboard } from "lucide-react"
+import { ChevronRight, Terminal, Keyboard } from "lucide-react"
 import type { ConsoleLine } from "@/lib/pseint/interpreter"
 
 interface Props {
   lines: ConsoleLine[]
   waitingForInput: boolean
   onSubmitInput: (value: string) => void
-  onClear: () => void
-  running: boolean
   onHoverVariable?: (variable: { name: string; line?: number } | null) => void
 }
 
@@ -15,8 +13,6 @@ export function ConsolePanel({
   lines,
   waitingForInput,
   onSubmitInput,
-  onClear,
-  running,
   onHoverVariable,
 }: Props) {
   const [input, setInput] = useState("")
@@ -38,26 +34,6 @@ export function ConsolePanel({
 
   return (
     <div className="flex h-full flex-col bg-background">
-      <div className="flex items-center justify-between border-b border-border bg-sidebar px-3 py-2">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-foreground">Consola</span>
-          {running && (
-            <span className="flex items-center gap-1.5 text-xs text-primary">
-              <span className="size-2 animate-pulse rounded-full bg-primary" />
-              ejecutando…
-            </span>
-          )}
-        </div>
-        <button
-          onClick={onClear}
-          className="flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          title="Limpiar consola"
-        >
-          <Eraser className="size-3.5" />
-          Limpiar
-        </button>
-      </div>
-
       <div className="flex-1 overflow-auto px-3 py-2 font-mono text-sm leading-6">
         {lines.length === 0 && !waitingForInput && (
           <p className="text-muted-foreground">

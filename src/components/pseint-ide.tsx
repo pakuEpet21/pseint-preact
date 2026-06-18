@@ -18,11 +18,15 @@ import {
   Sparkles,
   Undo2,
   Redo2,
+  Eraser,
+  Workflow,
+  Terminal,
 } from "lucide-react"
 import { CodeEditor, type CodeEditorHandle } from "@/components/code-editor"
 import { SnippetPanel } from "@/components/snippet-panel"
 import { ConsolePanel } from "@/components/console-panel"
 import { VariableInspector } from "@/components/variable-inspector"
+import { FlowchartPanel } from "@/components/flowchart-panel"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -87,6 +91,8 @@ export function PseintIDE() {
   const [consolePct, setConsolePct] = useState(38)
   // Toggle the operations (snippets) panel between editor and console.
   const [showOps, setShowOps] = useState(false)
+  // Right panel tab: console or flowchart.
+  const [rightTab, setRightTab] = useState<"console" | "flowchart">("console")
   // Visual theme: "light", "dark" (default) or "dracula".
   const [theme, setTheme] = useState<"light" | "dark" | "dracula">("dark")
   const [fontSize, setFontSize] = useState(14)
@@ -544,15 +550,15 @@ export function PseintIDE() {
       {/* Top bar */}
       <header className="flex items-center justify-between border-b border-border bg-sidebar px-4 py-2">
         <div className="flex items-center gap-2">
-           <div className="leading-tight flex  items-center gap- text-lg font-bold">
-           <span className="bg-gradient-to-r uppercase from-sky-400 via-indigo-500 to-fuchsia-500 bg-clip-text text-transparent">Next</span>
-         PSeint  </div>
+          <div className="leading-tight flex  items-center gap- text-lg font-bold">
+            <span className="bg-gradient-to-r uppercase from-sky-400 via-indigo-500 to-fuchsia-500 bg-clip-text text-transparent">Next</span>
+            PSeint  </div>
           {/* Save indicator */}
           <div className="ml-2 hidden  items-center gap-1.5 text-xs text-muted-foreground sm:flex">
             {saveState === "saving" && <Cloud className="size-3.5" />}
             {saveState === "saved" && (
               <span className="flex items-center gap-1 text-primary">
-               <CloudCheck className="size-3.5" />
+                <CloudCheck className="size-3.5" />
               </span>
             )}
             {saveState === "idle" && (
@@ -563,8 +569,8 @@ export function PseintIDE() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-       
-          <Tooltip delay={50}>
+
+          <Tooltip >
             <TooltipTrigger asChild>
               <button
                 onClick={openFile}
@@ -576,7 +582,7 @@ export function PseintIDE() {
             <TooltipContent side="bottom">Abrir archivo</TooltipContent>
           </Tooltip>
           <DropdownMenu>
-            <Tooltip delay={50}>
+            <Tooltip >
               <TooltipTrigger asChild>
                 <DropdownMenuTrigger
                   className="flex cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -584,7 +590,7 @@ export function PseintIDE() {
                   <Download className="size-4" />
                 </DropdownMenuTrigger>
               </TooltipTrigger>
-              <TooltipContent side="bottom">Descargar archivo</TooltipContent>
+              <TooltipContent side="bottom">Descargar</TooltipContent>
             </Tooltip>
             <DropdownMenuContent side="left" align="start" className="w-56">
               <div className="px-2 py-1.5 text-sm font-medium">Descargar como</div>
@@ -597,8 +603,8 @@ export function PseintIDE() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-            <DropdownMenu>
-            <Tooltip delay={50}>
+          <DropdownMenu>
+            <Tooltip >
               <TooltipTrigger asChild>
                 <DropdownMenuTrigger
                   className="flex cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -714,11 +720,10 @@ export function PseintIDE() {
                   key={t.id}
                   onClick={() => setActiveId(t.id)}
                   onDblClick={() => renameTab(t.id)}
-                  className={`group flex shrink-0 cursor-pointer items-center gap-2 border-r border-border px-3 py-2 text-sm transition-colors ${
-                    t.id === activeId
+                  className={`group flex shrink-0 cursor-pointer items-center gap-2 border-r border-border px-3 py-2 text-sm transition-colors ${t.id === activeId
                       ? "bg-card text-foreground"
                       : "text-muted-foreground hover:bg-accent/50"
-                  }`}
+                    }`}
                   title="Doble clic para renombrar"
                 >
                   <FileCode2 className="size-3.5 text-primary" />
@@ -755,7 +760,7 @@ export function PseintIDE() {
                 </div>
               ))}
             </div>
-            <Tooltip delay={50}>
+            <Tooltip >
               <TooltipTrigger asChild>
                 <button
                   onClick={addTab}
@@ -767,18 +772,18 @@ export function PseintIDE() {
               </TooltipTrigger>
               <TooltipContent side="bottom">Nueva pestaña</TooltipContent>
             </Tooltip>
-             <Tooltip delay={50}>
-            <TooltipTrigger asChild>
-              <button
-                onClick={formatActiveTab}
+            <Tooltip >
+              <TooltipTrigger asChild>
+                <button
+                  onClick={formatActiveTab}
                   className="shrink-0 cursor-pointer rounded-md  px-2.5 py-2 text-primary transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                <Sparkles className="size-4" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">Formatear código</TooltipContent>
-          </Tooltip>
-            <Tooltip delay={50}>
+                >
+                  <Sparkles className="size-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Formatear</TooltipContent>
+            </Tooltip>
+            <Tooltip >
               <TooltipTrigger asChild>
                 <button
                   onClick={undo}
@@ -791,7 +796,7 @@ export function PseintIDE() {
               </TooltipTrigger>
               <TooltipContent side="bottom">Deshacer</TooltipContent>
             </Tooltip>
-            <Tooltip delay={50}>
+            <Tooltip >
               <TooltipTrigger asChild>
                 <button
                   onClick={redo}
@@ -830,23 +835,72 @@ export function PseintIDE() {
           title="Arrastra para redimensionar (doble clic para restablecer)"
         />
 
-        {/* Right: console */}
+        {/* Right: console / flowchart */}
         <section
           className="flex min-h-0 flex-1 flex-col lg:flex-none lg:basis-(--console-basis)"
           style={{ "--console-basis": `${consolePct}%` } as CSSProperties}
         >
-          <ConsolePanel
-            lines={lines}
-            running={running}
-            waitingForInput={waitingForInput}
-            onSubmitInput={submitInput}
-            onClear={() => {
-              setLines([])
-              setVars([])
-            }}
-            onHoverVariable={setHoveredVariable}
-          />
-          <VariableInspector vars={vars} />
+          <div className="flex items-center justify-between border-b border-border bg-sidebar px-3 py-2">
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setRightTab("console")}
+                className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${rightTab === "console"
+                    ? "bg-accent text-foreground"
+                    : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                  }`}
+              >
+                <Terminal className="size-3.5" />
+                Consola
+              </button>
+              <button
+                type="button"
+                onClick={() => setRightTab("flowchart")}
+                className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${rightTab === "flowchart"
+                    ? "bg-accent text-foreground"
+                    : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                  }`}
+              >
+                <Workflow className="size-3.5" />
+                Diagrama
+              </button>
+            </div>
+            <div className="flex items-center gap-2">
+              {rightTab === "console" && running && (
+                <span className="flex items-center gap-1.5 text-xs text-primary">
+                  <span className="size-2 animate-pulse rounded-full bg-primary" />
+                  ejecutando…
+                </span>
+              )}
+              {rightTab === "console" && (
+                <button
+                  onClick={() => {
+                    setLines([])
+                    setVars([])
+                  }}
+                  className="flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  title="Limpiar consola"
+                >
+                  <Eraser className="size-3.5" />
+                  Limpiar
+                </button>
+              )}
+            </div>
+          </div>
+
+          {rightTab === "console" ? (
+            <>
+              <ConsolePanel
+                lines={lines}
+                waitingForInput={waitingForInput}
+                onSubmitInput={submitInput}
+                onHoverVariable={setHoveredVariable}
+              />
+              <VariableInspector vars={vars} />
+            </>
+          ) : (
+            <FlowchartPanel code={active.content} />
+          )}
         </section>
       </div>
 
@@ -909,6 +963,6 @@ export function PseintIDE() {
           </div>
         </div>
       )}
-      </div>
+    </div>
   )
 }

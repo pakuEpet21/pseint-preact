@@ -22,7 +22,7 @@ function useTooltipContext() {
   return ctx
 }
 
-function Tooltip({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+function Tooltip({ children, delay = 500 }: { children: React.ReactNode; delay?: number }) {
   const [state, setState] = React.useState<TooltipState>({ open: false, triggerRect: null })
   const hoverPopupRef = React.useRef(false)
   return (

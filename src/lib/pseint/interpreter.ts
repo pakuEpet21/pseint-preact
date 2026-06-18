@@ -1429,35 +1429,46 @@ function runtimeHint(message: string): string | undefined {
   return undefined
 }
 
-export async function runPseint(source: string, opts: RunOptions): Promise<void> {
-  let program: Node
+export function parsePseint(source: string): {
+  program: Node | null
+  errors: { message: string; line?: number; hint?: string }[]
+} {
   try {
     const tokens = tokenize(source)
     const parser = new Parser(tokens)
-    program = parser.parseProgram()
-
-    if (parser.errors.length > 0) {
-      for (const err of parser.errors) {
-        opts.onOutput({
-          type: "error",
-          text: `Error de sintaxis${err.line ? ` (línea ${err.line})` : ""}: ${err.message}`,
-          hint: err.hint,
-          line: err.line,
-        })
-      }
-      return
-    }
+    const program = parser.parseProgram()
+    const errors = parser.errors.map((e) => ({
+      message: e.message,
+      line: e.line,
+      hint: e.hint,
+    }))
+    return { program, errors }
   } catch (e: any) {
     const line = e instanceof PseintError ? e.line : undefined
     const hint = e instanceof PseintError ? e.hint : undefined
-    opts.onOutput({
-      type: "error",
-      text: `Error de sintaxis${line ? ` (línea ${line})` : ""}: ${e.message}`,
-      hint,
-      line,
-    })
+    return {
+      program: null,
+      errors: [{ message: e.message, line, hint }],
+    }
+  }
+}
+
+export async function runPseint(source: string, opts: RunOptions): Promise<void> {
+  const { program, errors } = parsePseint(source)
+
+  if (errors.length > 0) {
+    for (const err of errors) {
+      opts.onOutput({
+        type: "error",
+        text: `Error de sintaxis${err.line ? ` (línea ${err.line})` : ""}: ${err.message}`,
+        hint: err.hint,
+        line: err.line,
+      })
+    }
     return
   }
+
+  if (!program) return
 
   try {
     const interp = new Interpreter(program, opts)
