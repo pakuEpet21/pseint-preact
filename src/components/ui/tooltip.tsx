@@ -1,0 +1,203 @@
+import * as React from "preact/compat"
+import { createPortal } from "preact/compat"
+import { cn } from "@/lib/utils"
+
+interface TooltipState {
+  open: boolean
+  triggerRect: DOMRect | null
+}
+
+interface TooltipContextValue {
+  state: TooltipState
+  setState: React.Dispatch<React.SetStateAction<TooltipState>>
+  delay: number
+  hoverPopupRef: React.MutableRefObject<boolean>
+}
+
+const TooltipContext = React.createContext<TooltipContextValue | null>(null)
+
+function useTooltipContext() {
+  const ctx = React.useContext(TooltipContext)
+  if (!ctx) throw new Error("Tooltip components must be used within TooltipProvider")
+  return ctx
+}
+
+function TooltipProvider({
+  delay = 0,
+  children,
+}: {
+  delay?: number
+  children: React.ReactNode
+}) {
+  const [state, setState] = React.useState<TooltipState>({ open: false, triggerRect: null })
+  const hoverPopupRef = React.useRef(false)
+  return (
+    <TooltipContext.Provider value={{ state, setState, delay, hoverPopupRef }}>
+      {children}
+    </TooltipContext.Provider>
+  )
+}
+
+function Tooltip({ children }: { children: React.ReactNode }) {
+  return <>{children}</>
+}
+
+interface TooltipTriggerProps {
+  children: React.ReactNode
+  asChild?: boolean
+  className?: string
+}
+
+function TooltipTrigger({ children, asChild, className }: TooltipTriggerProps) {
+  const { setState, delay, hoverPopupRef } = useTooltipContext()
+  const triggerRef = React.useRef<HTMLElement>(null)
+  const timeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const scheduleClose = React.useCallback(() => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    timeoutRef.current = setTimeout(() => {
+      if (!hoverPopupRef.current) {
+        setState(s => ({ ...s, open: false }))
+      }
+    }, delay + 50)
+  }, [delay, hoverPopupRef, setState])
+
+  const handleMouseEnter = React.useCallback(() => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    timeoutRef.current = setTimeout(() => {
+      if (triggerRef.current) {
+        setState({ open: true, triggerRect: triggerRef.current.getBoundingClientRect() })
+      }
+    }, delay)
+  }, [delay, setState])
+
+  const handleMouseLeave = React.useCallback(() => {
+    scheduleClose()
+  }, [scheduleClose])
+
+  React.useEffect(() => {
+    return () => { if (timeoutRef.current) clearTimeout(timeoutRef.current) }
+  }, [])
+
+  if (asChild && React.isValidElement(children)) {
+    const child = children as React.ReactElement<{
+      ref?: React.Ref<HTMLElement>
+      onMouseEnter?: (e: React.MouseEvent) => void
+      onMouseLeave?: (e: React.MouseEvent) => void
+    }>
+    return React.cloneElement(child, {
+      ref: (node: HTMLElement | null) => { triggerRef.current = node },
+      onMouseEnter: (e: React.MouseEvent) => { handleMouseEnter(); child.props.onMouseEnter?.(e) },
+      onMouseLeave: (e: React.MouseEvent) => { handleMouseLeave(); child.props.onMouseLeave?.(e) },
+    } as React.ComponentPropsWithoutRef<"div">)
+  }
+
+  return (
+    <span
+      ref={triggerRef}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      className={className}
+    >
+      {children}
+    </span>
+  )
+}
+
+interface TooltipContentProps {
+  children?: React.ReactNode
+  side?: "top" | "bottom" | "left" | "right"
+  sideOffset?: number
+  align?: "center" | "start" | "end"
+  alignOffset?: number
+  className?: string
+}
+
+function TooltipContent({
+  children,
+  side = "bottom",
+  sideOffset = 4,
+  align = "center",
+  alignOffset = 0,
+  className,
+}: TooltipContentProps) {
+  const { state, setState, delay, hoverPopupRef } = useTooltipContext()
+  const [mounted, setMounted] = React.useState(false)
+  const [visible, setVisible] = React.useState(false)
+  const [position, setPosition] = React.useState({ top: 0, left: 0 })
+  const unmountTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  React.useEffect(() => {
+    return () => {
+      if (unmountTimerRef.current) clearTimeout(unmountTimerRef.current)
+    }
+  }, [])
+
+  React.useEffect(() => {
+    if (state.open && state.triggerRect) {
+      if (unmountTimerRef.current) clearTimeout(unmountTimerRef.current)
+      const rect = state.triggerRect
+      let top = 0, left = 0
+
+      if (side === "top") { top = rect.top - sideOffset; left = rect.left + rect.width / 2 }
+      else if (side === "bottom") { top = rect.bottom + sideOffset; left = rect.left + rect.width / 2 }
+      else if (side === "left") { top = rect.top + rect.height / 2; left = rect.left - sideOffset }
+      else if (side === "right") { top = rect.top + rect.height / 2; left = rect.right + sideOffset }
+
+      if (align === "start") left = side === "left" || side === "right" ? left : rect.left
+      else if (align === "end") left = side === "left" || side === "right" ? left : rect.right
+
+      setPosition({ top, left })
+      setMounted(true)
+      requestAnimationFrame(() => setVisible(true))
+    } else if (!state.open && mounted) {
+      setVisible(false)
+      unmountTimerRef.current = setTimeout(() => {
+        setMounted(false)
+      }, 150)
+    }
+  }, [state.open, state.triggerRect, side, sideOffset, align, mounted])
+
+  const handlePopupMouseEnter = () => {
+    hoverPopupRef.current = true
+    if (unmountTimerRef.current) clearTimeout(unmountTimerRef.current)
+  }
+
+  const handlePopupMouseLeave = () => {
+    hoverPopupRef.current = false
+    setState(s => ({ ...s, open: false }))
+  }
+
+  if (!mounted) return null
+
+  let transformOrigin = "center"
+  if (side === "top") transformOrigin = align === "center" ? "center bottom" : align === "start" ? "left bottom" : "right bottom"
+  else if (side === "bottom") transformOrigin = align === "center" ? "center top" : align === "start" ? "left top" : "right top"
+  else if (side === "left") transformOrigin = align === "center" ? "right center" : align === "start" ? "right top" : "right bottom"
+  else if (side === "right") transformOrigin = align === "center" ? "left center" : align === "start" ? "left top" : "left bottom"
+
+  const offsetX = align === "start" ? -alignOffset : align === "end" ? alignOffset : 0
+
+  const slideClass = side === "top" ? "slide-in-from-bottom-2"
+    : side === "bottom" ? "slide-in-from-top-2"
+    : side === "left" ? "slide-in-from-right-2"
+    : "slide-in-from-left-2"
+
+  return createPortal(
+    <div
+      onMouseEnter={handlePopupMouseEnter}
+      onMouseLeave={handlePopupMouseLeave}
+      style={{ position: "fixed", top: position.top, left: position.left + offsetX, transformOrigin, zIndex: 50 }}
+      className={cn(
+        "z-50 inline-flex w-fit max-w-xs origin-(--transform-origin) items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-xs text-background",
+        visible ? `animate-in fade-in-0 zoom-in-95 ${slideClass}` : "animate-out fade-out-0 zoom-out-95",
+        className
+      )}
+    >
+      {children}
+    </div>,
+    document.body
+  )
+}
+
+export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider }
