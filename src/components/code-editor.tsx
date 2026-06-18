@@ -28,7 +28,13 @@ function escapeHtml(s: string): string {
     .replace(/>/g, "&gt;")
 }
 
-function highlight(code: string): string {
+function baseVarName(name: string): string {
+  const idx = name.indexOf("[")
+  return idx >= 0 ? name.slice(0, idx) : name
+}
+
+function highlight(code: string, highlightVar?: string | null): string {
+  const target = highlightVar ? baseVarName(highlightVar).toLowerCase() : null
   let out = ""
   let i = 0
   while (i < code.length) {
@@ -66,6 +72,8 @@ function highlight(code: string): string {
       const word = code.slice(i, j)
       if (KW_SET.has(word.toLowerCase())) {
         out += `<span class="tok-keyword">${escapeHtml(word)}</span>`
+      } else if (target && word.toLowerCase() === target) {
+        out += `<span class="tok-var-highlight">${escapeHtml(word)}</span>`
       } else {
         out += escapeHtml(word)
       }
@@ -97,6 +105,7 @@ interface Props {
   errorLines?: number[]
   onUndo?: () => void
   onRedo?: () => void
+  highlightVariable?: string | null
 }
 
 function getWordAtCursor(value: string, cursorPos: number): string {
@@ -162,7 +171,7 @@ function getCursorPixelPosition(
 }
 
 export const CodeEditor = forwardRef<CodeEditorHandle, Props>(function CodeEditor(
-  { value, onChange, highlightLine, errorLines, onUndo, onRedo },
+  { value, onChange, highlightLine, errorLines, onUndo, onRedo, highlightVariable },
   ref,
 ) {
   const taRef = useRef<HTMLTextAreaElement>(null)
@@ -417,7 +426,7 @@ export const CodeEditor = forwardRef<CodeEditorHandle, Props>(function CodeEdito
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 overflow-auto whitespace-pre px-3 py-3 leading-6 text-foreground"
           dangerouslySetInnerHTML={{
-            __html: highlight(value) + "\n",
+            __html: highlight(value, highlightVariable) + "\n",
           }}
         />
         <textarea

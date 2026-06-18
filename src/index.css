@@ -345,6 +345,14 @@
   color: var(--tok-op);
 }
 
+/* Variable highlight on console hover */
+.tok-var-highlight {
+  background-color: color-mix(in oklab, var(--primary) 22%, transparent);
+  border: 1px solid color-mix(in oklab, var(--primary) 45%, transparent);
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
 .autocomplete-dropdown {
   position: absolute;
   z-index: 50;

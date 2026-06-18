@@ -8,6 +8,7 @@ interface Props {
   onSubmitInput: (value: string) => void
   onClear: () => void
   running: boolean
+  onHoverVariable?: (variable: string | null) => void
 }
 
 export function ConsolePanel({
@@ -16,6 +17,7 @@ export function ConsolePanel({
   onSubmitInput,
   onClear,
   running,
+  onHoverVariable,
 }: Props) {
   const [input, setInput] = useState("")
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -84,7 +86,9 @@ export function ConsolePanel({
             return (
               <div
                 key={idx}
-                className="my-1 flex items-center justify-between gap-2 rounded-md border-l-4 border-l-chart-2 bg-chart-2/5 p-2"
+                className="my-1 flex items-center justify-between gap-2 rounded-md border-l-4 border-l-chart-2 bg-chart-2/5 p-2 transition-colors hover:bg-chart-2/10"
+                onMouseEnter={() => line.variable && onHoverVariable?.(line.variable)}
+                onMouseLeave={() => onHoverVariable?.(null)}
               >
                 <div className="flex items-start gap-2">
                   <Keyboard className="mt-0.5 size-4 shrink-0 text-chart-2" />
@@ -103,7 +107,9 @@ export function ConsolePanel({
             return (
               <div
                 key={idx}
-                className="my-1 flex items-center justify-between gap-2 rounded-md border-l-4 border-l-primary bg-primary/5 p-2"
+                className="my-1 flex items-center justify-between gap-2 rounded-md border-l-4 border-l-primary bg-primary/5 p-2 transition-colors hover:bg-primary/10"
+                onMouseEnter={() => line.variable && onHoverVariable?.(line.variable)}
+                onMouseLeave={() => onHoverVariable?.(null)}
               >
                 <div className="flex items-start gap-2">
                   <Terminal className="mt-0.5 size-4 shrink-0 text-primary" />

@@ -96,6 +96,7 @@ export function PseintIDE() {
   const [editingTabId, setEditingTabId] = useState<string | null>(null)
   const [editingTabName, setEditingTabName] = useState("")
   const [errorLines, setErrorLines] = useState<number[]>([])
+  const [hoveredVariable, setHoveredVariable] = useState<string | null>(null)
   const draggingRef = useRef(false)
   const splitRef = useRef<HTMLDivElement>(null)
   const inputResolverRef = useRef<((v: string) => void) | null>(null)
@@ -818,7 +819,7 @@ export function PseintIDE() {
 
           {/* Editor */}
           <div className="min-h-0 flex-1">
-            <CodeEditor ref={editorRef} value={active.content} onChange={updateActiveContent} errorLines={errorLines} onUndo={undo} onRedo={redo} />
+            <CodeEditor ref={editorRef} value={active.content} onChange={updateActiveContent} errorLines={errorLines} onUndo={undo} onRedo={redo} highlightVariable={hoveredVariable} />
           </div>
         </section>
 
@@ -847,6 +848,7 @@ export function PseintIDE() {
               setLines([])
               setVars([])
             }}
+            onHoverVariable={setHoveredVariable}
           />
           <VariableInspector vars={vars} />
         </section>
