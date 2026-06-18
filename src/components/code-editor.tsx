@@ -105,7 +105,7 @@ interface Props {
   errorLines?: number[]
   onUndo?: () => void
   onRedo?: () => void
-  highlightVariable?: string | null
+  highlightVariable?: { name: string; line?: number } | null
   fontSize?: number
 }
 
@@ -429,7 +429,11 @@ export const CodeEditor = forwardRef<CodeEditorHandle, Props>(function CodeEdito
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 overflow-auto whitespace-pre px-3 py-3 text-foreground"
           dangerouslySetInnerHTML={{
-            __html: highlight(value, highlightVariable) + "\n",
+            __html: lines.map((line, idx) => {
+              const lineNum = idx + 1
+              const varForLine = highlightVariable?.line === lineNum ? highlightVariable.name : null
+              return highlight(line, varForLine)
+            }).join("\n") + "\n",
           }}
         />
         <textarea

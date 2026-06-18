@@ -8,7 +8,7 @@ interface Props {
   onSubmitInput: (value: string) => void
   onClear: () => void
   running: boolean
-  onHoverVariable?: (variable: string | null) => void
+  onHoverVariable?: (variable: { name: string; line?: number } | null) => void
 }
 
 export function ConsolePanel({
@@ -87,7 +87,7 @@ export function ConsolePanel({
               <div
                 key={idx}
                 className="my-1 flex items-center justify-between gap-2 rounded-md border-l-4 border-l-chart-2 bg-chart-2/5 p-2 transition-colors hover:bg-chart-2/10"
-                onMouseEnter={() => line.variable && onHoverVariable?.(line.variable)}
+                onMouseEnter={() => line.variable && onHoverVariable?.({ name: line.variable, line: line.sourceLine })}
                 onMouseLeave={() => onHoverVariable?.(null)}
               >
                 <div className="flex items-start gap-2">
@@ -108,7 +108,7 @@ export function ConsolePanel({
               <div
                 key={idx}
                 className="my-1 flex items-center justify-between gap-2 rounded-md border-l-4 border-l-primary bg-primary/5 p-2 transition-colors hover:bg-primary/10"
-                onMouseEnter={() => line.variable && onHoverVariable?.(line.variable)}
+                onMouseEnter={() => line.variable && onHoverVariable?.({ name: line.variable, line: line.sourceLine })}
                 onMouseLeave={() => onHoverVariable?.(null)}
               >
                 <div className="flex items-start gap-2">

@@ -11,6 +11,7 @@ export interface ConsoleLine {
   hint?: string
   line?: number
   variable?: string
+  sourceLine?: number
 }
 
 export interface VarSnapshot {
@@ -807,7 +808,7 @@ class Interpreter {
         if (node.args.length === 1 && node.args[0].type === "Var") {
           variable = formatLValue(node.args[0])
         }
-        this.opts.onOutput({ type: "out", text: parts.join(""), variable })
+        this.opts.onOutput({ type: "out", text: parts.join(""), variable, sourceLine: node.line })
         return
       }
       case "Leer": {
@@ -833,7 +834,7 @@ class Interpreter {
             v = parseInput(raw)
           }
           this.assign(target, v, scope)
-          this.opts.onOutput({ type: "in", text: String(raw), variable: formatLValue(target) })
+          this.opts.onOutput({ type: "in", text: String(raw), variable: formatLValue(target), sourceLine: node.line })
         }
         return
       }

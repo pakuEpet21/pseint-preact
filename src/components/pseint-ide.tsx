@@ -42,7 +42,7 @@ import {
   type VarSnapshot,
 } from "@/lib/pseint/interpreter"
 import { formatPseint } from "@/lib/pseint/format"
-import { STARTER_CODE, EXAMPLES } from "@/lib/pseint/snippets"
+import { STARTER_CODE } from "@/lib/pseint/snippets"
 import {
   loadWorkspace,
   saveWorkspace,
@@ -95,7 +95,7 @@ export function PseintIDE() {
   const [editingTabId, setEditingTabId] = useState<string | null>(null)
   const [editingTabName, setEditingTabName] = useState("")
   const [errorLines, setErrorLines] = useState<number[]>([])
-  const [hoveredVariable, setHoveredVariable] = useState<string | null>(null)
+  const [hoveredVariable, setHoveredVariable] = useState<{ name: string; line?: number } | null>(null)
   const draggingRef = useRef(false)
   const splitRef = useRef<HTMLDivElement>(null)
   const inputResolverRef = useRef<((v: string) => void) | null>(null)
@@ -404,12 +404,6 @@ export function PseintIDE() {
     a.download = `${baseName}.${format}`
     a.click()
     URL.revokeObjectURL(url)
-  }
-
-  const loadExample = (_name: string, fileName: string, code: string) => {
-    const tab: FileTab = { id: newId(), name: fileName, content: code }
-    setTabs((prev) => [...prev, tab])
-    setActiveId(tab.id)
   }
 
   const resetWorkspace = () => {
