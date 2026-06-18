@@ -1,19 +1,22 @@
 import { useMemo } from "preact/hooks"
-import { generateFlowchart, type FlowNode } from "@/lib/pseint/flowchart"
+import {
+  generateFlowchart,
+  type FlowNode,
+  type FlowArrow,
+  COLORS,
+} from "@/lib/pseint/flowchart"
 
 interface Props {
   code: string
 }
 
 function renderNode(node: FlowNode, idx: number): any {
-  const { kind, text, x, y, width, height } = node
-  const fill = "var(--card, #1e293b)"
-  const stroke = "var(--border, #475569)"
-  const textColor = "var(--foreground, #e2e8f0)"
+  const { kind, text, x, y, width, height, color } = node
 
   switch (kind) {
     case "start":
-    case "end":
+    case "end": {
+      const fill = color || COLORS.startEnd
       return (
         <g key={`node-${idx}`}>
           <ellipse
@@ -22,7 +25,7 @@ function renderNode(node: FlowNode, idx: number): any {
             rx={width / 2}
             ry={height / 2}
             fill={fill}
-            stroke={stroke}
+            stroke={fill}
             strokeWidth={2}
           />
           <text
@@ -30,15 +33,18 @@ function renderNode(node: FlowNode, idx: number): any {
             y={y}
             textAnchor="middle"
             dominantBaseline="central"
-            fill={textColor}
+            fill="white"
             fontSize={13}
             fontFamily="sans-serif"
+            fontWeight="bold"
           >
             {text}
           </text>
         </g>
       )
-    case "process":
+    }
+    case "process": {
+      const stroke = color || COLORS.processStroke
       return (
         <g key={`node-${idx}`}>
           <rect
@@ -47,7 +53,7 @@ function renderNode(node: FlowNode, idx: number): any {
             width={width}
             height={height}
             rx={4}
-            fill={fill}
+            fill="var(--card, #1e293b)"
             stroke={stroke}
             strokeWidth={2}
           />
@@ -56,30 +62,7 @@ function renderNode(node: FlowNode, idx: number): any {
             y={y}
             textAnchor="middle"
             dominantBaseline="central"
-            fill={textColor}
-            fontSize={12}
-            fontFamily="sans-serif"
-          >
-            {text}
-          </text>
-        </g>
-      )
-    case "io": {
-      const skew = 12
-      return (
-        <g key={`node-${idx}`}>
-          <path
-            d={`M${x - width / 2 + skew},${y - height / 2} L${x + width / 2},${y - height / 2} L${x + width / 2 - skew},${y + height / 2} L${x - width / 2},${y + height / 2} Z`}
-            fill={fill}
-            stroke={stroke}
-            strokeWidth={2}
-          />
-          <text
-            x={x}
-            y={y}
-            textAnchor="middle"
-            dominantBaseline="central"
-            fill={textColor}
+            fill={COLORS.text}
             fontSize={12}
             fontFamily="sans-serif"
           >
@@ -88,12 +71,14 @@ function renderNode(node: FlowNode, idx: number): any {
         </g>
       )
     }
-    case "decision":
+    case "io": {
+      const skew = 12
+      const stroke = color || COLORS.ioStroke
       return (
         <g key={`node-${idx}`}>
           <path
-            d={`M${x},${y - height / 2} L${x + width / 2},${y} L${x},${y + height / 2} L${x - width / 2},${y} Z`}
-            fill={fill}
+            d={`M${x - width / 2 + skew},${y - height / 2} L${x + width / 2},${y - height / 2} L${x + width / 2 - skew},${y + height / 2} L${x - width / 2},${y + height / 2} Z`}
+            fill="var(--card, #1e293b)"
             stroke={stroke}
             strokeWidth={2}
           />
@@ -102,7 +87,7 @@ function renderNode(node: FlowNode, idx: number): any {
             y={y}
             textAnchor="middle"
             dominantBaseline="central"
-            fill={textColor}
+            fill={COLORS.text}
             fontSize={12}
             fontFamily="sans-serif"
           >
@@ -110,43 +95,40 @@ function renderNode(node: FlowNode, idx: number): any {
           </text>
         </g>
       )
-    case "label":
-      return (
-        <text
-          key={`node-${idx}`}
-          x={x}
-          y={y}
-          textAnchor="middle"
-          dominantBaseline="central"
-          fill={stroke}
-          fontSize={11}
-          fontFamily="sans-serif"
-        >
-          {node.label}
-        </text>
-      )
-    case "loopback": {
-      const { fromX, fromY, toX, toY } = node
-      if (
-        fromX == null ||
-        fromY == null ||
-        toX == null ||
-        toY == null
-      )
-        return null
+    }
+    case "decision": {
+      const stroke = color || COLORS.decisionStroke
       return (
         <g key={`node-${idx}`}>
-          <line
-            x1={fromX}
-            y1={fromY}
-            x2={toX}
-            y2={toY}
+          <path
+            d={`M${x},${y - height / 2} L${x + width / 2},${y} L${x},${y + height / 2} L${x - width / 2},${y} Z`}
+            fill="var(--card, #1e293b)"
             stroke={stroke}
             strokeWidth={2}
-            strokeDasharray="4 3"
-            markerEnd="url(#arrowhead)"
           />
+          <text
+            x={x}
+            y={y}
+            textAnchor="middle"
+            dominantBaseline="central"
+            fill={COLORS.text}
+            fontSize={12}
+            fontFamily="sans-serif"
+          >
+            {text}
+          </text>
         </g>
+      )
+    }
+    case "merge": {
+      return (
+        <circle
+          key={`node-${idx}`}
+          cx={x}
+          cy={y}
+          r={width / 2}
+          fill="var(--border, #475569)"
+        />
       )
     }
     default:
@@ -154,30 +136,46 @@ function renderNode(node: FlowNode, idx: number): any {
   }
 }
 
-function renderArrows(nodes: FlowNode[]): any[] {
-  const arrows: any[] = []
-  const stroke = "var(--border, #475569)"
+function renderArrow(arrow: FlowArrow, idx: number): any {
+  const { fromX, fromY, toX, toY, color, dashed, via, label } = arrow
+  const stroke = color || COLORS.arrowNormal
 
-  const seq = nodes.filter(
-    (n) => !["loopback", "label"].includes(n.kind)
-  )
-  for (let i = 0; i < seq.length - 1; i++) {
-    const a = seq[i]
-    const b = seq[i + 1]
-    arrows.push(
-      <line
-        key={`arrow-${i}`}
-        x1={a.x}
-        y1={a.y + a.height / 2}
-        x2={b.x}
-        y2={b.y - b.height / 2}
+  let d: string
+  if (via && via.length > 0) {
+    const points = [{ x: fromX, y: fromY }, ...via, { x: toX, y: toY }]
+    d = points.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ")
+  } else {
+    d = `M${fromX},${fromY} L${toX},${toY}`
+  }
+
+  const labelX = via && via.length ? via[Math.floor(via.length / 2)].x : (fromX + toX) / 2
+  const labelY = via && via.length ? via[Math.floor(via.length / 2)].y - 8 : (fromY + toY) / 2 - 8
+
+  return (
+    <g key={`arrow-${idx}`}>
+      <path
+        d={d}
+        fill="none"
         stroke={stroke}
         strokeWidth={2}
+        strokeDasharray={dashed ? "5 4" : undefined}
         markerEnd="url(#arrowhead)"
       />
-    )
-  }
-  return arrows
+      {label && (
+        <text
+          x={labelX}
+          y={labelY}
+          textAnchor="middle"
+          fill={stroke}
+          fontSize={11}
+          fontFamily="sans-serif"
+          fontWeight="bold"
+        >
+          {label}
+        </text>
+      )}
+    </g>
+  )
 }
 
 export function FlowchartPanel({ code }: Props) {
@@ -199,12 +197,14 @@ export function FlowchartPanel({ code }: Props) {
     )
   }
 
+  const vb = result.viewBox
+
   return (
     <div className="h-full w-full overflow-auto bg-background">
       <svg
         width="100%"
         height="100%"
-        viewBox={`0 0 500 ${Math.max(result.viewHeight, 300)}`}
+        viewBox={`${vb.minX} ${vb.minY} ${vb.maxX - vb.minX} ${vb.maxY - vb.minY}`}
         preserveAspectRatio="xMidYMin meet"
         className="min-h-full"
       >
@@ -217,13 +217,10 @@ export function FlowchartPanel({ code }: Props) {
             refY="3.5"
             orient="auto"
           >
-            <polygon
-              points="0 0, 10 3.5, 0 7"
-              fill="var(--border, #475569)"
-            />
+            <polygon points="0 0, 10 3.5, 0 7" fill="var(--border, #475569)" />
           </marker>
         </defs>
-        {renderArrows(result.nodes)}
+        {result.arrows.map((a, i) => renderArrow(a, i))}
         {result.nodes.map((n, i) => renderNode(n, i))}
       </svg>
     </div>
