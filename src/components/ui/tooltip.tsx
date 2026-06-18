@@ -22,7 +22,7 @@ function useTooltipContext() {
   return ctx
 }
 
-function Tooltip({ children, delay = 50 }: { children: React.ReactNode; delay?: number }) {
+function Tooltip({ children, delay = 500 }: { children: React.ReactNode; delay?: number }) {
   const [state, setState] = React.useState<TooltipState>({ open: false, triggerRect: null })
   const hoverPopupRef = React.useRef(false)
   return (
@@ -49,7 +49,7 @@ function TooltipTrigger({ children, asChild, className }: TooltipTriggerProps) {
       if (!hoverPopupRef.current) {
         setState(s => ({ ...s, open: false }))
       }
-    }, delay + 50)
+    }, 50)
   }, [delay, hoverPopupRef, setState])
 
   const handleMouseEnter = React.useCallback(() => {
