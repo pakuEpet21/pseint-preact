@@ -89,7 +89,10 @@ function DropdownMenuTrigger({ children, asChild, className }: DropdownMenuTrigg
 
   return (
     <button
-      ref={triggerElementRef as React.RefObject<HTMLButtonElement>}
+      ref={(node: HTMLButtonElement | null) => {
+        triggerElementRef.current = node
+        triggerRef.current = node
+      }}
       type="button"
       onClick={handleClick}
       className={className}
