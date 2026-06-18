@@ -121,10 +121,10 @@ function TooltipContent({
   alignOffset = 0,
   className,
 }: TooltipContentProps) {
-  const { state, setState, delay, hoverPopupRef } = useTooltipContext()
+  const { state } = useTooltipContext()
   const [mounted, setMounted] = React.useState(false)
   const [visible, setVisible] = React.useState(false)
-  const [position, setPosition] = React.useState({ top: 0, left: 0 })
+  const [position, setPosition] = React.useState({ top: 0, left: 0, transform: "" })
   const unmountTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
 
   React.useEffect(() => {
@@ -138,16 +138,62 @@ function TooltipContent({
       if (unmountTimerRef.current) clearTimeout(unmountTimerRef.current)
       const rect = state.triggerRect
       let top = 0, left = 0
+      let transform = ""
 
-      if (side === "top") { top = rect.top - sideOffset; left = rect.left + rect.width / 2 }
-      else if (side === "bottom") { top = rect.bottom + sideOffset; left = rect.left + rect.width / 2 }
-      else if (side === "left") { top = rect.top + rect.height / 2; left = rect.left - sideOffset }
-      else if (side === "right") { top = rect.top + rect.height / 2; left = rect.right + sideOffset }
+      if (side === "top") {
+        top = rect.top - sideOffset
+        if (align === "center") {
+          left = rect.left + rect.width / 2
+          transform = "translateX(-50%) translateY(-100%)"
+        } else if (align === "start") {
+          left = rect.left
+          transform = "translateY(-100%)"
+        } else if (align === "end") {
+          left = rect.right
+          transform = "translateX(-100%) translateY(-100%)"
+        }
+      } else if (side === "bottom") {
+        top = rect.bottom + sideOffset
+        if (align === "center") {
+          left = rect.left + rect.width / 2
+          transform = "translateX(-50%)"
+        } else if (align === "start") {
+          left = rect.left
+          transform = ""
+        } else if (align === "end") {
+          left = rect.right
+          transform = "translateX(-100%)"
+        }
+      } else if (side === "left") {
+        left = rect.left - sideOffset
+        if (align === "center") {
+          top = rect.top + rect.height / 2
+          transform = "translateX(-100%) translateY(-50%)"
+        } else if (align === "start") {
+          top = rect.top
+          transform = "translateX(-100%)"
+        } else if (align === "end") {
+          top = rect.bottom
+          transform = "translateX(-100%) translateY(-100%)"
+        }
+      } else if (side === "right") {
+        left = rect.right + sideOffset
+        if (align === "center") {
+          top = rect.top + rect.height / 2
+          transform = "translateY(-50%)"
+        } else if (align === "start") {
+          top = rect.top
+          transform = ""
+        } else if (align === "end") {
+          top = rect.bottom
+          transform = "translateY(-100%)"
+        }
+      }
 
-      if (align === "start") left = side === "left" || side === "right" ? left : rect.left
-      else if (align === "end") left = side === "left" || side === "right" ? left : rect.right
+      if (align === "start") left -= alignOffset
+      else if (align === "end") left += alignOffset
 
-      setPosition({ top, left })
+      setPosition({ top, left, transform })
       setMounted(true)
       requestAnimationFrame(() => setVisible(true))
     } else if (!state.open && mounted) {
@@ -156,17 +202,7 @@ function TooltipContent({
         setMounted(false)
       }, 150)
     }
-  }, [state.open, state.triggerRect, side, sideOffset, align, mounted])
-
-  const handlePopupMouseEnter = () => {
-    hoverPopupRef.current = true
-    if (unmountTimerRef.current) clearTimeout(unmountTimerRef.current)
-  }
-
-  const handlePopupMouseLeave = () => {
-    hoverPopupRef.current = false
-    setState(s => ({ ...s, open: false }))
-  }
+  }, [state.open, state.triggerRect, side, sideOffset, align, alignOffset, mounted])
 
   if (!mounted) return null
 
@@ -176,8 +212,6 @@ function TooltipContent({
   else if (side === "left") transformOrigin = align === "center" ? "right center" : align === "start" ? "right top" : "right bottom"
   else if (side === "right") transformOrigin = align === "center" ? "left center" : align === "start" ? "left top" : "left bottom"
 
-  const offsetX = align === "start" ? -alignOffset : align === "end" ? alignOffset : 0
-
   const slideClass = side === "top" ? "slide-in-from-bottom-2"
     : side === "bottom" ? "slide-in-from-top-2"
     : side === "left" ? "slide-in-from-right-2"
@@ -185,11 +219,9 @@ function TooltipContent({
 
   return createPortal(
     <div
-      onMouseEnter={handlePopupMouseEnter}
-      onMouseLeave={handlePopupMouseLeave}
-      style={{ position: "fixed", top: position.top, left: position.left + offsetX, transformOrigin, zIndex: 50 }}
+      style={{ position: "fixed", top: position.top, left: position.left, transform: position.transform, transformOrigin, zIndex: 50 }}
       className={cn(
-        "z-50 inline-flex w-fit max-w-xs origin-(--transform-origin) items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-xs text-background",
+        "pointer-events-none z-50 inline-flex w-fit max-w-xs origin-(--transform-origin) items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-xs text-background",
         visible ? `animate-in fade-in-0 zoom-in-95 ${slideClass}` : "animate-out fade-out-0 zoom-out-95",
         className
       )}

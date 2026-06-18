@@ -773,7 +773,7 @@ export function PseintIDE() {
               <TooltipTrigger asChild>
                 <button
                   onClick={addTab}
-                  className="shrink-0 cursor-pointer px-2.5 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  className="shrink-0 cursor-pointer rounded-md  px-2.5 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
                   aria-label="Nueva pestaña"
                 >
                   <Plus className="size-4" />
@@ -786,7 +786,7 @@ export function PseintIDE() {
                 <button
                   onClick={undo}
                   disabled={!canUndo}
-                  className="shrink-0 cursor-pointer rounded-md border border-border px-2.5 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                  className="shrink-0 cursor-pointer rounded-md  px-2.5 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
                   aria-label="Deshacer"
                 >
                   <Undo2 className="size-4" />
@@ -799,7 +799,7 @@ export function PseintIDE() {
                 <button
                   onClick={redo}
                   disabled={!canRedo}
-                  className="shrink-0 cursor-pointer rounded-md border border-border px-2.5 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                  className="shrink-0 cursor-pointer rounded-md  px-2.5 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
                   aria-label="Rehacer"
                 >
                   <Redo2 className="size-4" />
