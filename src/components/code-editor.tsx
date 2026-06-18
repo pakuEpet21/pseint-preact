@@ -106,6 +106,7 @@ interface Props {
   onUndo?: () => void
   onRedo?: () => void
   highlightVariable?: string | null
+  fontSize?: number
 }
 
 function getWordAtCursor(value: string, cursorPos: number): string {
@@ -171,7 +172,7 @@ function getCursorPixelPosition(
 }
 
 export const CodeEditor = forwardRef<CodeEditorHandle, Props>(function CodeEditor(
-  { value, onChange, highlightLine, errorLines, onUndo, onRedo, highlightVariable },
+  { value, onChange, highlightLine, errorLines, onUndo, onRedo, highlightVariable, fontSize = 14 },
   ref,
 ) {
   const taRef = useRef<HTMLTextAreaElement>(null)

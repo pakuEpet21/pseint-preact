@@ -111,45 +111,85 @@ interface DropdownMenuContentProps {
 function DropdownMenuContent({
   children,
   align = "start",
+  alignOffset = 0,
   side = "bottom",
   sideOffset = 4,
   className,
 }: DropdownMenuContentProps) {
   const { open, setOpen, triggerRef } = useDropdownMenuContext()
-  const [position, setPosition] = React.useState({ top: 0, left: 0 })
+  const [position, setPosition] = React.useState({ top: 0, left: 0, transform: "" })
   const [visible, setVisible] = React.useState(false)
 
   React.useEffect(() => {
     if (open && triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect()
       let top = 0, left = 0
+      let transform = ""
 
       if (side === "bottom") {
         top = rect.bottom + sideOffset
-        left = rect.left
+        if (align === "start") {
+          left = rect.left
+          transform = ""
+        } else if (align === "center") {
+          left = rect.left + rect.width / 2
+          transform = "translateX(-50%)"
+        } else if (align === "end") {
+          left = rect.right
+          transform = "translateX(-100%)"
+        }
       } else if (side === "top") {
         top = rect.top - sideOffset
-        left = rect.left
+        if (align === "start") {
+          left = rect.left
+          transform = "translateY(-100%)"
+        } else if (align === "center") {
+          left = rect.left + rect.width / 2
+          transform = "translateX(-50%) translateY(-100%)"
+        } else if (align === "end") {
+          left = rect.right
+          transform = "translateX(-100%) translateY(-100%)"
+        }
       } else if (side === "left") {
-        top = rect.top
         left = rect.left - sideOffset
+        if (align === "start") {
+          top = rect.top
+          transform = "translateX(-100%)"
+        } else if (align === "center") {
+          top = rect.top + rect.height / 2
+          transform = "translateX(-100%) translateY(-50%)"
+        } else if (align === "end") {
+          top = rect.bottom
+          transform = "translateX(-100%) translateY(-100%)"
+        }
       } else if (side === "right") {
-        top = rect.top
         left = rect.right + sideOffset
+        if (align === "start") {
+          top = rect.top
+          transform = ""
+        } else if (align === "center") {
+          top = rect.top + rect.height / 2
+          transform = "translateY(-50%)"
+        } else if (align === "end") {
+          top = rect.bottom
+          transform = "translateY(-100%)"
+        }
       }
 
-      if (align === "center") {
-        left = left + (triggerRef.current.offsetWidth / 2)
-      } else if (align === "end") {
-        left = left + triggerRef.current.offsetWidth
+      if (side === "bottom" || side === "top") {
+        if (align === "start") left -= alignOffset
+        else if (align === "end") left += alignOffset
+      } else {
+        if (align === "start") top -= alignOffset
+        else if (align === "end") top += alignOffset
       }
 
-      setPosition({ top, left })
+      setPosition({ top, left, transform })
       requestAnimationFrame(() => setVisible(true))
     } else {
       setVisible(false)
     }
-  }, [open, triggerRef, side, sideOffset, align])
+  }, [open, triggerRef, side, sideOffset, align, alignOffset])
 
   if (!open) return null
 
@@ -162,9 +202,9 @@ function DropdownMenuContent({
     <DropdownMenuPortal>
       <div
         data-dropdown-content=""
-        style={{ position: "fixed", top: position.top, left: position.left, zIndex: 50 }}
+        style={{ position: "fixed", top: position.top, left: position.left, transform: position.transform, zIndex: 50 }}
         className={cn(
-          "z-50 max-h-(--available-height) w-(--anchor-width) min-w-32 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10 outline-none",
+          "z-50 max-h-(--available-height) min-w-32 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10 outline-none",
           "data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2",
           visible ? `animate-in fade-in-0 zoom-in-95 ${slideClass}` : "animate-out fade-out-0 zoom-out-95",
           className

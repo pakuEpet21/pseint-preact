@@ -9,12 +9,10 @@ import {
   Plus,
   X,
   FileCode2,
- 
   Check,
   Trash2,
   PanelLeftOpen,
-  Palette,
-
+  Settings,
   Cloud,
   CloudCheck,
   Sparkles,
@@ -92,6 +90,7 @@ export function PseintIDE() {
   const [showOps, setShowOps] = useState(false)
   // Visual theme: "light", "dark" (default) or "dracula".
   const [theme, setTheme] = useState<"light" | "dark" | "dracula">("dark")
+  const [fontSize, setFontSize] = useState(14)
   const [tabPendingClose, setTabPendingClose] = useState<FileTab | null>(null)
   const [editingTabId, setEditingTabId] = useState<string | null>(null)
   const [editingTabName, setEditingTabName] = useState("")
@@ -118,10 +117,15 @@ export function PseintIDE() {
   const active = tabs.find((t) => t.id === activeId) ?? tabs[0]
   void (theme === "light" ? logoDark : logoLight) //NO MODIFICAR ESTO
 
-  // Load saved theme on mount.
+  // Load saved theme and font size on mount.
   useEffect(() => {
-    const saved = localStorage.getItem("pseint:theme")
-    if (saved === "light" || saved === "dark" || saved === "dracula") setTheme(saved)
+    const savedTheme = localStorage.getItem("pseint:theme")
+    if (savedTheme === "light" || savedTheme === "dark" || savedTheme === "dracula") setTheme(savedTheme)
+    const savedFont = localStorage.getItem("pseint:fontSize")
+    if (savedFont) {
+      const n = Number.parseInt(savedFont, 10)
+      if (!Number.isNaN(n) && n >= 10 && n <= 24) setFontSize(n)
+    }
   }, [])
 
   // Apply the theme class to <html> and persist it.
@@ -131,6 +135,11 @@ export function PseintIDE() {
     if (theme !== "light") root.classList.add(theme)
     localStorage.setItem("pseint:theme", theme)
   }, [theme])
+
+  // Persist font size.
+  useEffect(() => {
+    localStorage.setItem("pseint:fontSize", String(fontSize))
+  }, [fontSize])
 
   useEffect(() => {
     if (!editingTabId || !renameInputRef.current) return
@@ -568,12 +577,12 @@ export function PseintIDE() {
                 <DropdownMenuTrigger
                   className="flex cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
-                  <Palette className="size-4" />
+                  <Settings className="size-4" />
                 </DropdownMenuTrigger>
               </TooltipTrigger>
-              <TooltipContent side="bottom">Cambiar tema visual</TooltipContent>
+              <TooltipContent side="bottom">Configuración</TooltipContent>
             </Tooltip>
-            <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuContent align="end" className="w-56">
               <div className="px-2 py-1.5 text-sm font-medium">Tema visual</div>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => setTheme("light")}>
@@ -591,33 +600,27 @@ export function PseintIDE() {
                 Dracula
                 {theme === "dracula" && <Check className="ml-auto size-4" />}
               </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <DropdownMenu>
-           {/*  <DropdownMenuTrigger
-              className="flex cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              title="Ejemplos"
-            >
-              <BookOpen className="size-4" />
-              <span className="hidden md:inline">Ejemplos</span>
-            </DropdownMenuTrigger> */}
-            <DropdownMenuContent align="end" className="w-64">
-              <div className="px-2 py-1.5 text-sm font-medium">
-                Programas de ejemplo
-              </div>
               <DropdownMenuSeparator />
-              {EXAMPLES.map((ex) => (
-                <DropdownMenuItem
-                  key={ex.fileName}
-                  onClick={() => loadExample(ex.name, ex.fileName, ex.code)}
-                  className="flex flex-col items-start gap-0.5"
+              <div className="px-2 py-1.5 text-sm font-medium">Tamaño de fuente</div>
+              <div className="flex items-center justify-between px-2 py-1">
+                <button
+                  type="button"
+                  onClick={() => setFontSize((s) => Math.max(10, s - 1))}
+                  className="flex size-7 items-center justify-center rounded-md border border-border text-sm hover:bg-accent"
+                  aria-label="Disminuir fuente"
                 >
-                  <span className="text-sm">{ex.name}</span>
-                  <span className="font-mono text-xs text-muted-foreground">
-                    {ex.fileName}
-                  </span>
-                </DropdownMenuItem>
-              ))}
+                  -
+                </button>
+                <span className="text-sm tabular-nums">{fontSize}px</span>
+                <button
+                  type="button"
+                  onClick={() => setFontSize((s) => Math.min(24, s + 1))}
+                  className="flex size-7 items-center justify-center rounded-md border border-border text-sm hover:bg-accent"
+                  aria-label="Aumentar fuente"
+                >
+                  +
+                </button>
+              </div>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={resetWorkspace}
@@ -819,7 +822,7 @@ export function PseintIDE() {
 
           {/* Editor */}
           <div className="min-h-0 flex-1">
-            <CodeEditor ref={editorRef} value={active.content} onChange={updateActiveContent} errorLines={errorLines} onUndo={undo} onRedo={redo} highlightVariable={hoveredVariable} />
+            <CodeEditor ref={editorRef} value={active.content} onChange={updateActiveContent} errorLines={errorLines} onUndo={undo} onRedo={redo} highlightVariable={hoveredVariable} fontSize={fontSize} />
           </div>
         </section>
 
