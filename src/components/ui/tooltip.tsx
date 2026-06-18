@@ -22,7 +22,7 @@ function useTooltipContext() {
   return ctx
 }
 
-function Tooltip({ children, delay = 500 }: { children: React.ReactNode; delay?: number }) {
+function Tooltip({ children, delay = 50 }: { children: React.ReactNode; delay?: number }) {
   const [state, setState] = React.useState<TooltipState>({ open: false, triggerRect: null })
   const hoverPopupRef = React.useRef(false)
   return (
@@ -215,7 +215,7 @@ function TooltipContent({
         style={{ transformOrigin }}
         className={cn(
           "pointer-events-none z-50 inline-flex w-fit max-w-xs items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-xs text-background",
-          visible ? `animate-in fade-in-0 zoom-in-95 ${slideClass}` : "animate-out fade-out-0 zoom-out-95",
+          visible ? `animate-in fade-in-0 zoom-in-95 ${slideClass}` : "animate-out fade-out-0 zoom-out-50",
           className
         )}
       >

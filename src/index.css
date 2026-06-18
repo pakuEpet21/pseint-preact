@@ -22,6 +22,10 @@
   font-display: swap;
 }
 
+button{
+  @apply cursor-pointer;
+}
+
 @theme inline {
   --font-heading: var(--font-sans);
   --font-sans: 'Cascadia Code', var(--font-geist-sans), 'Geist Fallback', monospace;
