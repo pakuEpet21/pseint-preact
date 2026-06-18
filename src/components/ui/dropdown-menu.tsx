@@ -65,7 +65,7 @@ function DropdownMenuTrigger({ children, asChild, className }: DropdownMenuTrigg
   const { open, setOpen, triggerRef } = useDropdownMenuContext()
   const triggerElementRef = React.useRef<HTMLElement>(null)
 
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = (e: React.MouseEvent<HTMLElement>) => {
     e.stopPropagation()
     setOpen(!open)
   }
@@ -73,14 +73,14 @@ function DropdownMenuTrigger({ children, asChild, className }: DropdownMenuTrigg
   if (asChild && React.isValidElement(children)) {
     const child = children as React.ReactElement<{
       ref?: React.Ref<HTMLElement>
-      onClick?: (e: React.MouseEvent) => void
+      onClick?: (e: React.MouseEvent<HTMLElement>) => void
     }>
     return React.cloneElement(child, {
       ref: (node: HTMLElement | null) => {
         triggerElementRef.current = node
         triggerRef.current = node
       },
-      onClick: (e: React.MouseEvent) => {
+      onClick: (e: React.MouseEvent<HTMLElement>) => {
         handleClick(e)
         child.props.onClick?.(e)
       },
@@ -111,7 +111,6 @@ interface DropdownMenuContentProps {
 function DropdownMenuContent({
   children,
   align = "start",
-  alignOffset = 0,
   side = "bottom",
   sideOffset = 4,
   className,

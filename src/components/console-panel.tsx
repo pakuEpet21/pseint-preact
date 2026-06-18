@@ -137,7 +137,7 @@ export function ConsolePanel({
             <input
               ref={inputRef}
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => setInput(e.currentTarget.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") submit()
               }}

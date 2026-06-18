@@ -82,13 +82,13 @@ function TooltipTrigger({ children, asChild, className }: TooltipTriggerProps) {
   if (asChild && React.isValidElement(children)) {
     const child = children as React.ReactElement<{
       ref?: React.Ref<HTMLElement>
-      onMouseEnter?: (e: React.MouseEvent) => void
-      onMouseLeave?: (e: React.MouseEvent) => void
+      onMouseEnter?: (e: React.MouseEvent<HTMLElement>) => void
+      onMouseLeave?: (e: React.MouseEvent<HTMLElement>) => void
     }>
     return React.cloneElement(child, {
       ref: (node: HTMLElement | null) => { triggerRef.current = node },
-      onMouseEnter: (e: React.MouseEvent) => { handleMouseEnter(); child.props.onMouseEnter?.(e) },
-      onMouseLeave: (e: React.MouseEvent) => { handleMouseLeave(); child.props.onMouseLeave?.(e) },
+      onMouseEnter: (e: React.MouseEvent<HTMLElement>) => { handleMouseEnter(); child.props.onMouseEnter?.(e) },
+      onMouseLeave: (e: React.MouseEvent<HTMLElement>) => { handleMouseLeave(); child.props.onMouseLeave?.(e) },
     } as React.ComponentPropsWithoutRef<"div">)
   }
 

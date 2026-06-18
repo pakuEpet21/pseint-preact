@@ -109,14 +109,14 @@ export function PseintIDE() {
 
   // History (undo/redo) per tab
   const historiesRef = useRef<Record<string, HistoryEntry>>({})
-  const [historyVersion, setHistoryVersion] = useState(0)
+  const [, setHistoryVersion] = useState(0)
   const prevStateRef = useRef<Record<string, Snapshot>>({})
   const prevActiveIdRef = useRef(activeId)
   const snapshotTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isUndoingRef = useRef(false)
 
   const active = tabs.find((t) => t.id === activeId) ?? tabs[0]
-  const currentLogo = theme === "light" ? logoDark : logoLight //NO MODIFICAR ESTO
+  void (theme === "light" ? logoDark : logoLight) //NO MODIFICAR ESTO
 
   // Load saved theme on mount.
   useEffect(() => {
@@ -321,7 +321,7 @@ export function PseintIDE() {
     setActiveId(tab.id)
   }
 
-  const requestCloseTab = (id: string, e: MouseEvent) => {
+  const requestCloseTab = (id: string, e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation()
     const tab = tabs.find((t) => t.id === id)
     if (!tab) return
@@ -370,7 +370,7 @@ export function PseintIDE() {
   const openFile = () => fileInputRef.current?.click()
 
   const onFileChosen = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+    const file = e.currentTarget.files?.[0]
     if (!file) return
     const reader = new FileReader()
     reader.onload = () => {
@@ -383,7 +383,7 @@ export function PseintIDE() {
       setActiveId(tab.id)
     }
     reader.readAsText(file)
-    e.target.value = ""
+    e.currentTarget.value = ""
   }
 
   const downloadFile = (format: "psc" | "txt" = "psc") => {
@@ -397,7 +397,7 @@ export function PseintIDE() {
     URL.revokeObjectURL(url)
   }
 
-  const loadExample = (name: string, fileName: string, code: string) => {
+  const loadExample = (_name: string, fileName: string, code: string) => {
     const tab: FileTab = { id: newId(), name: fileName, content: code }
     setTabs((prev) => [...prev, tab])
     setActiveId(tab.id)
@@ -510,7 +510,7 @@ export function PseintIDE() {
 
   // Resizable split: drag the divider to change the console width (desktop).
   useEffect(() => {
-    const onMove = (e: MouseEvent) => {
+    const onMove = (e: globalThis.MouseEvent) => {
       if (!draggingRef.current || !splitRef.current) return
       const rect = splitRef.current.getBoundingClientRect()
       const fromRight = ((rect.right - e.clientX) / rect.width) * 100
@@ -728,7 +728,7 @@ export function PseintIDE() {
                 <div
                   key={t.id}
                   onClick={() => setActiveId(t.id)}
-                  onDoubleClick={() => renameTab(t.id)}
+                  onDblClick={() => renameTab(t.id)}
                   className={`group flex shrink-0 cursor-pointer items-center gap-2 border-r border-border px-3 py-2 text-sm transition-colors ${
                     t.id === activeId
                       ? "bg-card text-foreground"
@@ -741,9 +741,9 @@ export function PseintIDE() {
                     <input
                       ref={renameInputRef}
                       value={editingTabName}
-                      onChange={(e) => setEditingTabName(e.target.value)}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => setEditingTabName(e.currentTarget.value)}
                       onClick={(e) => e.stopPropagation()}
-                      onDoubleClick={(e) => e.stopPropagation()}
+                      onDblClick={(e) => e.stopPropagation()}
                       onBlur={saveRenamedTab}
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
@@ -829,7 +829,7 @@ export function PseintIDE() {
           aria-orientation="vertical"
           aria-label="Redimensionar consola"
           onMouseDown={startDrag}
-          onDoubleClick={() => setConsolePct(38)}
+          onDblClick={() => setConsolePct(38)}
           className="hidden w-1 shrink-0 cursor-col-resize bg-border transition-colors hover:bg-primary lg:block"
           title="Arrastra para redimensionar (doble clic para restablecer)"
         />

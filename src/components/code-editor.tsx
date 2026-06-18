@@ -294,10 +294,10 @@ export const CodeEditor = forwardRef<CodeEditorHandle, Props>(function CodeEdito
   )
 
   const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
-    const next = e.target.value
+    const next = e.currentTarget.value
     onChange(next)
     requestAnimationFrame(() => {
-      updateAutocomplete(next, e.target.selectionStart)
+      updateAutocomplete(next, e.currentTarget.selectionStart)
     })
   }
 
@@ -437,7 +437,7 @@ export const CodeEditor = forwardRef<CodeEditorHandle, Props>(function CodeEdito
           onKeyUp={handleKeyUp}
           onClick={handleClick}
           onScroll={handleScroll}
-          spellCheck={false}
+          spellcheck={false}
           autoCapitalize="off"
           autoComplete="off"
           autoCorrect="off"

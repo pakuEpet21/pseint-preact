@@ -1,5 +1,5 @@
 import { useState } from "preact/hooks"
-import { ChevronRight, Code2, PanelLeftClose } from "lucide-react"
+import { ChevronRight, PanelLeftClose } from "lucide-react"
 import { SNIPPET_CATEGORIES } from "@/lib/pseint/snippets"
 
 export function SnippetPanel({
