@@ -388,8 +388,10 @@ export const CodeEditor = forwardRef<CodeEditorHandle, Props>(function CodeEdito
   const lines = value.split("\n")
   const lineCount = lines.length
 
+  const lh = fontSize * 1.5
+
   return (
-    <div className="relative flex h-full w-full overflow-hidden bg-card font-mono text-sm">
+    <div className="relative flex h-full w-full overflow-hidden bg-card font-mono" style={{ fontSize: `${fontSize}px`, lineHeight: `${lh}px` }}>
       {/* gutter */}
       <div
         ref={gutterRef}
@@ -404,10 +406,10 @@ export const CodeEditor = forwardRef<CodeEditorHandle, Props>(function CodeEdito
           return (
             <div
               key={idx}
-              className={`relative px-3 leading-6 ${
+              className={`relative px-3 ${
                 isHighlight ? "bg-primary/20 text-foreground" : ""
               } ${isError ? "text-destructive font-semibold" : ""}`}
-              style={{ height: "1.5rem" }}
+              style={{ height: `${lh}px` }}
             >
               <div className="flex gap-2 flex-row items-center justify-end">
               {isError && (
@@ -425,7 +427,7 @@ export const CodeEditor = forwardRef<CodeEditorHandle, Props>(function CodeEdito
         <pre
           ref={preRef}
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 overflow-auto whitespace-pre px-3 py-3 leading-6 text-foreground"
+          className="pointer-events-none absolute inset-0 overflow-auto whitespace-pre px-3 py-3 text-foreground"
           dangerouslySetInnerHTML={{
             __html: highlight(value, highlightVariable) + "\n",
           }}
@@ -442,7 +444,7 @@ export const CodeEditor = forwardRef<CodeEditorHandle, Props>(function CodeEdito
           autoCapitalize="off"
           autoComplete="off"
           autoCorrect="off"
-          className="absolute inset-0 resize-none overflow-auto whitespace-pre bg-transparent px-3 py-3 leading-6 text-transparent caret-foreground outline-none"
+          className="absolute inset-0 resize-none overflow-auto whitespace-pre bg-transparent px-3 py-3 text-transparent caret-foreground outline-none"
           aria-label="Editor de pseudocódigo"
         />
         <div className="pointer-events-none absolute bottom-2 right-3 rounded bg-secondary/80 px-2 py-0.5 text-xs text-muted-foreground">
