@@ -129,6 +129,7 @@ interface DropdownMenuContentProps {
   side?: "top" | "bottom" | "left" | "right"
   sideOffset?: number
   className?: string
+  centerScreen?: boolean
 }
 
 function DropdownMenuContent({
@@ -138,13 +139,25 @@ function DropdownMenuContent({
   side = "bottom",
   sideOffset = 4,
   className,
+  centerScreen = false,
 }: DropdownMenuContentProps) {
   const { open, setOpen, triggerRef } = useDropdownMenuContext()
   const [position, setPosition] = React.useState({ top: 0, left: 0, transform: "" })
   const [visible, setVisible] = React.useState(false)
 
   React.useEffect(() => {
-    if (open && triggerRef.current) {
+    if (!open) {
+      setVisible(false)
+      return
+    }
+
+    if (centerScreen) {
+      setPosition({ top: 50, left: 50, transform: "translate(-50%, -50%)" })
+      requestAnimationFrame(() => setVisible(true))
+      return
+    }
+
+    if (triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect()
       let top = 0, left = 0
       let transform = ""
@@ -209,27 +222,32 @@ function DropdownMenuContent({
 
       setPosition({ top, left, transform })
       requestAnimationFrame(() => setVisible(true))
-    } else {
-      setVisible(false)
     }
-  }, [open, triggerRef, side, sideOffset, align, alignOffset])
+  }, [open, triggerRef, side, sideOffset, align, alignOffset, centerScreen])
 
   if (!open) return null
 
-  const slideClass = side === "bottom" ? "slide-in-from-top-2"
+  const slideClass = centerScreen ? ""
+    : side === "bottom" ? "slide-in-from-top-2"
     : side === "top" ? "slide-in-from-bottom-2"
     : side === "left" ? "slide-in-from-right-2"
     : "slide-in-from-left-2"
+
+  const zoomClass = centerScreen ? "" : "zoom-in-95"
+
+  const style: React.CSSProperties = centerScreen
+    ? { position: "fixed", top: `${position.top}%`, left: `${position.left}%`, transform: position.transform, zIndex: 50 }
+    : { position: "fixed", top: position.top, left: position.left, transform: position.transform, zIndex: 50 }
 
   return (
     <DropdownMenuPortal>
       <div
         data-dropdown-content=""
-        style={{ position: "fixed", top: position.top, left: position.left, transform: position.transform, zIndex: 50 }}
+        style={style}
         className={cn(
           "z-50 max-h-(--available-height) min-w-32 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10 outline-none",
           "data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2",
-          visible ? `animate-in fade-in-0 zoom-in-95 ${slideClass}` : "animate-out fade-out-0 zoom-out-95",
+          visible ? `animate-in fade-in-0 ${zoomClass} ${slideClass}`.trim() : "animate-out fade-out-0 zoom-out-95",
           className
         )}
         onClick={() => setOpen(false)}

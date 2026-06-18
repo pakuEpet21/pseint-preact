@@ -589,7 +589,7 @@ export function PseintIDE() {
               </TooltipTrigger>
               <TooltipContent side="bottom">Descargar</TooltipContent>
             </Tooltip>
-            <DropdownMenuContent side="left" align="start" className="w-56">
+            <DropdownMenuContent centerScreen className="w-56">
               <div className="px-2 py-1.5 text-sm font-medium">Descargar como</div>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => downloadFile("psc")}>
@@ -611,7 +611,7 @@ export function PseintIDE() {
               </TooltipTrigger>
               <TooltipContent side="bottom">Configuración</TooltipContent>
             </Tooltip>
-            <DropdownMenuContent side="left" align="start" className="w-56">
+            <DropdownMenuContent centerScreen className="w-56">
               <div className="px-2 py-1.5 text-sm font-medium">Tema visual</div>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => setTheme("light")}>

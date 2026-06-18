@@ -29,7 +29,7 @@ export interface FlowchartResult {
 }
 
 export const COLORS = {
-  startEnd: "#10b981",
+  startEnd: "#0f9b6c",
   processStroke: "var(--border, #475569)",
   ioStroke: "#3b82f6",
   decisionStroke: "#f59e0b",
