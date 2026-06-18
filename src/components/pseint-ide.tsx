@@ -51,8 +51,6 @@ import {
   saveWorkspace,
   clearWorkspace,
 } from "@/lib/pseint/storage"
-const logoDark = "/logo_dark.webp"
-const logoLight = "/logo_light.webp"
 
 interface FileTab {
   id: string
@@ -94,7 +92,7 @@ export function PseintIDE() {
   // Right panel tab: console or flowchart.
   const [rightTab, setRightTab] = useState<"console" | "flowchart">("console")
   // Visual theme: "light", "dark" (default) or "dracula".
-  const [theme, setTheme] = useState<"light" | "dark" | "dracula">("dark")
+  const [theme, setTheme] = useState<"light" | "dark" | "dracula">("dracula")
   const [fontSize, setFontSize] = useState(14)
   const [tabPendingClose, setTabPendingClose] = useState<FileTab | null>(null)
   const [editingTabId, setEditingTabId] = useState<string | null>(null)
@@ -120,7 +118,6 @@ export function PseintIDE() {
   const isUndoingRef = useRef(false)
 
   const active = tabs.find((t) => t.id === activeId) ?? tabs[0]
-  void (theme === "light" ? logoDark : logoLight) //NO MODIFICAR ESTO
 
   // Load saved theme and font size on mount.
   useEffect(() => {
