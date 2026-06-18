@@ -1,5 +1,5 @@
 import * as React from "preact/compat"
-import { createPortal } from "preact/compat"
+import { forwardRef, createPortal } from "preact/compat"
 import { cn } from "@/lib/utils"
 
 interface DropdownMenuContextValue {
@@ -61,46 +61,66 @@ interface DropdownMenuTriggerProps {
   className?: string
 }
 
-function DropdownMenuTrigger({ children, asChild, className }: DropdownMenuTriggerProps) {
+function mergeRefs<T>(...refs: (React.Ref<T> | undefined)[]) {
+  return (node: T | null) => {
+    refs.forEach((ref) => {
+      if (typeof ref === "function") ref(node)
+      else if (ref && "current" in ref) (ref as React.MutableRefObject<T | null>).current = node
+    })
+  }
+}
+
+const DropdownMenuTrigger = forwardRef<HTMLElement, DropdownMenuTriggerProps>(function DropdownMenuTrigger(
+  { children, asChild, className, ...rest },
+  forwardedRef
+) {
   const { open, setOpen, triggerRef } = useDropdownMenuContext()
-  const triggerElementRef = React.useRef<HTMLElement>(null)
 
   const handleClick = (e: React.MouseEvent<HTMLElement>) => {
     e.stopPropagation()
     setOpen(!open)
+    ;(rest as any).onClick?.(e)
   }
+
+  const setRefs = mergeRefs(forwardedRef, (node: HTMLElement | null) => { triggerRef.current = node })
 
   if (asChild && React.isValidElement(children)) {
     const child = children as React.ReactElement<{
       ref?: React.Ref<HTMLElement>
       onClick?: (e: React.MouseEvent<HTMLElement>) => void
+      onMouseEnter?: (e: React.MouseEvent<HTMLElement>) => void
+      onMouseLeave?: (e: React.MouseEvent<HTMLElement>) => void
     }>
     return React.cloneElement(child, {
-      ref: (node: HTMLElement | null) => {
-        triggerElementRef.current = node
-        triggerRef.current = node
-      },
+      ref: setRefs,
       onClick: (e: React.MouseEvent<HTMLElement>) => {
         handleClick(e)
         child.props.onClick?.(e)
+      },
+      onMouseEnter: (e: React.MouseEvent<HTMLElement>) => {
+        ;(rest as any).onMouseEnter?.(e)
+        child.props.onMouseEnter?.(e)
+      },
+      onMouseLeave: (e: React.MouseEvent<HTMLElement>) => {
+        ;(rest as any).onMouseLeave?.(e)
+        child.props.onMouseLeave?.(e)
       },
     } as React.ComponentPropsWithoutRef<"div">)
   }
 
   return (
     <button
-      ref={(node: HTMLButtonElement | null) => {
-        triggerElementRef.current = node
-        triggerRef.current = node
-      }}
+      ref={setRefs as any}
       type="button"
       onClick={handleClick}
+      onMouseEnter={(rest as any).onMouseEnter}
+      onMouseLeave={(rest as any).onMouseLeave}
       className={className}
     >
       {children}
     </button>
   )
-}
+})
 
 interface DropdownMenuContentProps {
   children?: React.ReactNode
