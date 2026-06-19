@@ -1,0 +1,53 @@
+schema: spec-driven
+
+context: |
+  Tech stack: Preact 10 + Vite 8 + Tailwind CSS 4 + TypeScript ~6.
+  Architecture: Browser-only SPA; entry index.html → src/main.tsx → src/app.tsx → src/components/pseint-ide.tsx.
+  Core: Hand-written recursive-descent PSeInt parser/interpreter in src/lib/pseint/.
+  Testing: No test runner configured; verification is `npm run build` (tsc -b && vite build).
+  Style: Strict TypeScript (noUnusedLocals, noUnusedParameters, verbatimModuleSyntax, erasableSyntaxOnly).
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes to the parser or interpreter.
+  specs:
+    - Use Given/When/Then for scenarios.
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY).
+  design:
+    - Include sequence diagrams for interpreter/parser changes.
+    - Document architecture decisions with rationale.
+  tasks:
+    - Group by phase, use hierarchical numbering.
+    - Keep tasks completable in one session.
+  apply:
+    - Follow existing code patterns in src/lib/pseint/ and src/components/.
+    tdd: false
+    test_command: ""
+  verify:
+    test_command: ""
+    build_command: "npm run build"
+    coverage_threshold: 0
+  archive:
+    - Warn before merging destructive deltas into main specs.
+
+testing:
+  strict_tdd: false
+  detected: 2026-06-19
+
+  runner:
+    command: ""
+    framework: none
+
+  layers:
+    unit: { available: false, tool: "—" }
+    integration: { available: false, tool: "—" }
+    e2e: { available: false, tool: "—" }
+
+  coverage:
+    available: false
+    command: "—"
+
+  quality:
+    linter: { available: false, command: "—" }
+    type_checker: { available: true, command: "npm run build" }
+    formatter: { available: false, command: "—" }
