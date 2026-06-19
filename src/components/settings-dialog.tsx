@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "preact/hooks"
 import type { JSX } from "preact"
-import { X, Check, Trash2, Moon, Sun, Sparkles } from "lucide-react"
+import { X, Moon, Sun, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export interface SettingsDialogProps {
@@ -12,7 +12,7 @@ export interface SettingsDialogProps {
   setFontSize: (size: number) => void
   strictMode: boolean
   setStrictMode: (strict: boolean) => void
-  onResetWorkspace: () => void
+
 }
 
 function Section({
@@ -102,7 +102,7 @@ export function SettingsDialog({
   setFontSize,
   strictMode,
   setStrictMode,
-  onResetWorkspace,
+
 }: SettingsDialogProps) {
   const panelRef = useRef<HTMLDivElement>(null)
 
@@ -230,19 +230,7 @@ export function SettingsDialog({
               </div>
             </Section>
 
-            <Section title="Espacio de trabajo">
-              <button
-                type="button"
-                onClick={() => {
-                  onOpenChange(false)
-                  onResetWorkspace()
-                }}
-                className="flex w-full items-center gap-2 rounded-xl border border-destructive/20 bg-destructive/5 p-4 text-left text-sm font-medium text-destructive transition-colors hover:bg-destructive/10"
-              >
-                <Trash2 className="size-4" />
-                Reiniciar espacio de trabajo
-              </button>
-            </Section>
+           
           </div>
         </div>
       </div>
