@@ -19,6 +19,8 @@ import {
   Eraser,
   Workflow,
   Terminal,
+  Bug,
+  StepForward,
 } from "lucide-react"
 import { CodeEditor, type CodeEditorHandle } from "@/components/code-editor"
 import { SnippetPanel } from "@/components/snippet-panel"
@@ -48,7 +50,6 @@ import { STARTER_CODE } from "@/lib/pseint/snippets"
 import {
   loadWorkspace,
   saveWorkspace,
-  clearWorkspace,
 } from "@/lib/pseint/storage"
 
 interface FileTab {
@@ -74,6 +75,12 @@ interface HistoryEntry {
   future: Snapshot[]
 }
 
+interface DebugController {
+  active: boolean
+  continueMode: boolean
+  resume?: () => void
+}
+
 export function PseintIDE() {
   const [tabs, setTabs] = useState<FileTab[]>([
     { id: newId(), name: "ejemplo.psc", content: STARTER_CODE },
@@ -94,7 +101,7 @@ export function PseintIDE() {
   const [theme, setTheme] = useState<"light" | "dark" | "dracula">("dracula")
   const [fontSize, setFontSize] = useState(14)
   // Strict mode: requires Algoritmo/FinAlgoritmo and declared variables.
-  const [strictMode, setStrictMode] = useState(false)
+  const [strictMode, setStrictMode] = useState(true)
   // Settings modal visibility.
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [tabPendingClose, setTabPendingClose] = useState<FileTab | null>(null)
@@ -102,6 +109,10 @@ export function PseintIDE() {
   const [editingTabName, setEditingTabName] = useState("")
   const [errorLines, setErrorLines] = useState<number[]>([])
   const [hoveredVariable, setHoveredVariable] = useState<{ name: string; line?: number } | null>(null)
+  const [debugActive, setDebugActive] = useState(false)
+  const [debugPaused, setDebugPaused] = useState(false)
+  const [debugLine, setDebugLine] = useState<number | null>(null)
+  const [debugVars, setDebugVars] = useState<VarSnapshot[]>([])
   const draggingRef = useRef(false)
   const splitRef = useRef<HTMLDivElement>(null)
   const inputResolverRef = useRef<((v: string) => void) | null>(null)
@@ -111,6 +122,10 @@ export function PseintIDE() {
   const hydratedRef = useRef(false)
   const editorRef = useRef<CodeEditorHandle>(null)
   const renameInputRef = useRef<HTMLInputElement>(null)
+  const debugControllerRef = useRef<DebugController>({
+    active: false,
+    continueMode: false,
+  })
 
   // History (undo/redo) per tab
   const historiesRef = useRef<Record<string, HistoryEntry>>({})
@@ -202,11 +217,14 @@ export function PseintIDE() {
 
   const updateActiveContent = useCallback(
     (content: string) => {
+      if (debugActive) {
+        stop()
+      }
       setTabs((prev) =>
         prev.map((t) => (t.id === activeId ? { ...t, content } : t)),
       )
     },
-    [activeId],
+    [activeId, debugActive],
   )
 
   const bumpHistory = () => setHistoryVersion((v) => v + 1)
@@ -352,6 +370,9 @@ export function PseintIDE() {
   const confirmCloseTab = () => {
     const id = tabPendingClose?.id
     if (!id) return
+    if (debugActive && id === activeId) {
+      stop()
+    }
     setTabs((prev) => {
       if (prev.length === 1) return prev
       const next = prev.filter((t) => t.id !== id)
@@ -418,24 +439,6 @@ export function PseintIDE() {
     URL.revokeObjectURL(url)
   }
 
-  const resetWorkspace = () => {
-    const ok = window.confirm(
-      "Esto borrará todos los archivos guardados y restaurará el ejemplo inicial. ¿Continuar?",
-    )
-    if (!ok) return
-    clearWorkspace()
-    historiesRef.current = {}
-    prevStateRef.current = {}
-    bumpHistory()
-    const tab: FileTab = {
-      id: newId(),
-      name: "ejemplo.psc",
-      content: STARTER_CODE,
-    }
-    setTabs([tab])
-    setActiveId(tab.id)
-    setLines([])
-  }
 
   const appendLine = (line: ConsoleLine) => {
     if (line.type === "info" && line.text === "\u0001CLEAR\u0001") {
@@ -460,28 +463,76 @@ export function PseintIDE() {
     inputResolverRef.current?.(value)
   }
 
-  const run = async () => {
+  const clearDebugState = useCallback(() => {
+    setDebugActive(false)
+    setDebugPaused(false)
+    setDebugLine(null)
+    setDebugVars([])
+    debugControllerRef.current = { active: false, continueMode: false }
+  }, [])
+
+  const onStep = useCallback(async (line: number, vars: VarSnapshot[]) => {
+    if (!debugControllerRef.current.active) return
+    setDebugLine(line)
+    setDebugVars(vars)
+    if (debugControllerRef.current.continueMode) {
+      setDebugPaused(false)
+      return
+    }
+    setDebugPaused(true)
+    return new Promise<void>((resolve) => {
+      debugControllerRef.current.resume = () => {
+        debugControllerRef.current.resume = undefined
+        resolve()
+      }
+    })
+  }, [])
+
+  const stepDebug = () => {
+    if (!debugControllerRef.current.active) return
+    debugControllerRef.current.continueMode = false
+    debugControllerRef.current.resume?.()
+  }
+
+  const continueDebug = () => {
+    if (!debugControllerRef.current.active) return
+    debugControllerRef.current.continueMode = true
+    debugControllerRef.current.resume?.()
+  }
+
+  const run = async (debug = false) => {
     if (running) return
     setLines([])
     setVars([])
     setErrorLines([])
     setRunning(true)
     abortRef.current = { aborted: false }
-    await runPseint(active.content, {
-      onOutput: (line) => {
-        appendLine(line)
-        if (line.line && (line.type === "error" || line.type === "warning")) {
-          setErrorLines((prev) => Array.from(new Set([...prev, line.line!])))
-        }
-      },
-      requestInput,
-      signal: abortRef.current,
-      onVariables: setVars,
-      strictMode,
-    })
-    appendLine({ type: "info", text: "--- Ejecución finalizada ---" })
-    setRunning(false)
-    setWaitingForInput(false)
+    clearDebugState()
+    if (debug) {
+      setDebugActive(true)
+      debugControllerRef.current = { active: true, continueMode: false }
+    }
+    try {
+      await runPseint(active.content, {
+        onOutput: (line) => {
+          appendLine(line)
+          if (line.line && (line.type === "error" || line.type === "warning")) {
+            setErrorLines((prev) => Array.from(new Set([...prev, line.line!])))
+          }
+        },
+        requestInput,
+        signal: abortRef.current,
+        onVariables: setVars,
+        strictMode,
+        debug,
+        onStep,
+      })
+    } finally {
+      appendLine({ type: "info", text: "--- Ejecución finalizada ---" })
+      setRunning(false)
+      setWaitingForInput(false)
+      clearDebugState()
+    }
   }
 
   const stop = () => {
@@ -489,6 +540,8 @@ export function PseintIDE() {
     // unblock any pending input
     inputResolverRef.current?.("")
     setWaitingForInput(false)
+    // release any active debug pause so the interpreter sees the abort signal
+    debugControllerRef.current.resume?.()
   }
 
   const formatActiveTab = () => {
@@ -632,8 +685,17 @@ export function PseintIDE() {
             setFontSize={setFontSize}
             strictMode={strictMode}
             setStrictMode={setStrictMode}
-            onResetWorkspace={resetWorkspace}
           />
+          {!running && (
+            <button
+              onClick={() => void run(true)}
+              title="Depurar paso a paso"
+              className="flex cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent"
+            >
+              <Bug className="size-4" />
+              <span className="hidden md:flex font-bold">Depurar</span>
+            </button>
+          )}
           {running ? (
             <button
               onClick={stop}
@@ -644,7 +706,7 @@ export function PseintIDE() {
             </button>
           ) : (
             <button
-              onClick={run}
+              onClick={() => void run()}
               title="Ejecutar (Ctrl+Enter)"
               className="flex cursor-pointer items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:opacity-90"
             >
@@ -791,7 +853,7 @@ export function PseintIDE() {
 
           {/* Editor */}
           <div className="min-h-0 flex-1">
-            <CodeEditor ref={editorRef} value={active.content} onChange={updateActiveContent} errorLines={errorLines} onUndo={undo} onRedo={redo} highlightVariable={hoveredVariable} fontSize={fontSize} />
+            <CodeEditor ref={editorRef} value={active.content} onChange={updateActiveContent} errorLines={errorLines} onUndo={undo} onRedo={redo} highlightVariable={hoveredVariable} highlightLine={debugActive ? debugLine : null} fontSize={fontSize} />
           </div>
         </section>
 
@@ -861,13 +923,52 @@ export function PseintIDE() {
 
           {rightTab === "console" ? (
             <>
+              {debugActive && (
+                <div className="flex items-center justify-between border-b border-border bg-sidebar px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={stepDebug}
+                      disabled={!debugPaused || waitingForInput}
+                      className="flex cursor-pointer items-center gap-1.5 rounded-md bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <StepForward className="size-3.5" />
+                      Paso
+                    </button>
+                    <button
+                      type="button"
+                      onClick={continueDebug}
+                      disabled={!debugPaused || waitingForInput}
+                      className="flex cursor-pointer items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <Play className="size-3.5" />
+                      Continuar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={stop}
+                      className="flex cursor-pointer items-center gap-1.5 rounded-md bg-destructive px-2.5 py-1.5 text-xs font-medium text-white transition-colors hover:opacity-90"
+                    >
+                      <Square className="size-3.5" />
+                      Detener
+                    </button>
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {waitingForInput
+                      ? "Esperando entrada…"
+                      : debugPaused
+                        ? "Pausado"
+                        : "Ejecutando…"}
+                  </span>
+                </div>
+              )}
               <ConsolePanel
                 lines={lines}
                 waitingForInput={waitingForInput}
                 onSubmitInput={submitInput}
                 onHoverVariable={setHoveredVariable}
               />
-              <VariableInspector vars={vars} />
+              <VariableInspector vars={debugActive ? debugVars : vars} />
             </>
           ) : (
             <FlowchartPanel code={active.content} />
