@@ -102,6 +102,8 @@ export function PseintIDE() {
   const [fontSize, setFontSize] = useState(14)
   // Strict mode: requires Algoritmo/FinAlgoritmo and declared variables.
   const [strictMode, setStrictMode] = useState(true)
+  // Compact console mode: single line per entry, less spacing.
+  const [consoleSimple, setConsoleSimple] = useState(false)
   // Settings modal visibility.
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [tabPendingClose, setTabPendingClose] = useState<FileTab | null>(null)
@@ -148,6 +150,8 @@ export function PseintIDE() {
     }
     const savedStrict = localStorage.getItem("pseint:strictMode")
     if (savedStrict) setStrictMode(savedStrict === "true")
+    const savedConsoleSimple = localStorage.getItem("pseint:consoleSimple")
+    if (savedConsoleSimple) setConsoleSimple(savedConsoleSimple === "true")
   }, [])
 
   // Apply the theme class to <html> and persist it.
@@ -167,6 +171,11 @@ export function PseintIDE() {
   useEffect(() => {
     localStorage.setItem("pseint:strictMode", String(strictMode))
   }, [strictMode])
+
+  // Persist console simple mode.
+  useEffect(() => {
+    localStorage.setItem("pseint:consoleSimple", String(consoleSimple))
+  }, [consoleSimple])
 
   useEffect(() => {
     if (!editingTabId || !renameInputRef.current) return
@@ -685,6 +694,8 @@ export function PseintIDE() {
             setFontSize={setFontSize}
             strictMode={strictMode}
             setStrictMode={setStrictMode}
+            consoleSimple={consoleSimple}
+            setConsoleSimple={setConsoleSimple}
           />
           {!running && (
             <button
@@ -922,7 +933,7 @@ export function PseintIDE() {
           </div>
 
           {rightTab === "console" ? (
-            <>
+            <div className="flex h-full min-h-0 flex-col">
               {debugActive && (
                 <div className="flex items-center justify-between border-b border-border bg-sidebar px-3 py-2">
                   <div className="flex items-center gap-2">
@@ -967,9 +978,10 @@ export function PseintIDE() {
                 waitingForInput={waitingForInput}
                 onSubmitInput={submitInput}
                 onHoverVariable={setHoveredVariable}
+                simple={consoleSimple}
               />
               <VariableInspector vars={debugActive ? debugVars : vars} />
-            </>
+            </div>
           ) : (
             <FlowchartPanel code={active.content} />
           )}

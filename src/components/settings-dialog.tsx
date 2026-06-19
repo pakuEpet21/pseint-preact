@@ -12,7 +12,8 @@ export interface SettingsDialogProps {
   setFontSize: (size: number) => void
   strictMode: boolean
   setStrictMode: (strict: boolean) => void
-
+  consoleSimple: boolean
+  setConsoleSimple: (simple: boolean) => void
 }
 
 function Section({
@@ -102,7 +103,8 @@ export function SettingsDialog({
   setFontSize,
   strictMode,
   setStrictMode,
-
+  consoleSimple,
+  setConsoleSimple,
 }: SettingsDialogProps) {
   const panelRef = useRef<HTMLDivElement>(null)
 
@@ -227,6 +229,18 @@ export function SettingsDialog({
                   </div>
                 </div>
                 <Switch checked={strictMode} onCheckedChange={setStrictMode} />
+              </div>
+            </Section>
+
+            <Section title="Consola">
+              <div className="flex items-center justify-between rounded-xl border border-border bg-card p-4">
+                <div>
+                  <div className="text-sm font-medium">Modo simple</div>
+                  <div className="text-xs text-muted-foreground">
+                    Línea por línea, sin tanto espaciado
+                  </div>
+                </div>
+                <Switch checked={consoleSimple} onCheckedChange={setConsoleSimple} />
               </div>
             </Section>
 

@@ -7,6 +7,7 @@ interface Props {
   waitingForInput: boolean
   onSubmitInput: (value: string) => void
   onHoverVariable?: (variable: { name: string; line?: number } | null) => void
+  simple?: boolean
 }
 
 export function ConsolePanel({
@@ -14,6 +15,7 @@ export function ConsolePanel({
   waitingForInput,
   onSubmitInput,
   onHoverVariable,
+  simple = false,
 }: Props) {
   const [input, setInput] = useState("")
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -33,8 +35,11 @@ export function ConsolePanel({
   }
 
   return (
-    <div className="flex h-full flex-col bg-background">
-      <div className="flex-1 overflow-auto px-3 py-2 font-mono text-sm leading-6">
+    <div className="flex h-full min-h-0 flex-col bg-background">
+      <div className={simple
+        ? "min-h-0 flex-1 overflow-auto px-2 py-1 font-mono text-xs leading-4"
+        : "min-h-0 flex-1 overflow-auto px-3 py-2 font-mono text-sm leading-6"
+      }>
         {lines.length === 0 && !waitingForInput && (
           <p className="text-muted-foreground">
             La salida de tu programa aparecerá aquí. Pulsa{" "}
@@ -44,12 +49,12 @@ export function ConsolePanel({
         {lines.map((line, idx) => {
           if (line.type === "error" || line.type === "warning") {
             return (
-              <div key={idx} className="my-1 rounded-md border border-destructive/30 bg-destructive/5 p-2">
+              <div key={idx} className={simple ? "py-0.5 text-destructive" : "my-1 rounded-md border border-destructive/30 bg-destructive/5 p-2"}>
                 <div className="flex items-start gap-1.5">
-                  <span className="mt-0.5 text-destructive">●</span>
+                  <span className={simple ? "text-destructive" : "mt-0.5 text-destructive"}>●</span>
                   <span className="whitespace-pre-wrap text-destructive">{line.text}</span>
                 </div>
-                {line.hint && (
+                {!simple && line.hint && (
                   <div className="mt-1 text-xs text-muted-foreground">
                     💡 {line.hint}
                   </div>
@@ -62,16 +67,19 @@ export function ConsolePanel({
             return (
               <div
                 key={idx}
-                className="my-1 flex items-center justify-between gap-2 rounded-md border-l-4 border-l-chart-2 bg-chart-2/5 p-2 transition-colors hover:bg-chart-2/10"
+                className={simple
+                  ? "flex items-center gap-1.5 py-0.5 text-chart-2"
+                  : "my-1 flex items-center justify-between gap-2 rounded-md border-l-4 border-l-chart-2 bg-chart-2/5 p-2 transition-colors hover:bg-chart-2/10"
+                }
                 onMouseEnter={() => line.variable && onHoverVariable?.({ name: line.variable, line: line.sourceLine })}
                 onMouseLeave={() => onHoverVariable?.(null)}
               >
-                <div className="flex items-start gap-2">
-                  <Keyboard className="mt-0.5 size-4 shrink-0 text-chart-2" />
-                  <span className="whitespace-pre-wrap text-chart-2 font-medium">{line.text}</span>
+                <div className="flex items-start gap-1.5">
+                  {simple ? null : <Keyboard className="mt-0.5 size-4 shrink-0 text-chart-2" />}
+                  <span className="whitespace-pre-wrap font-medium">{line.text}</span>
                 </div>
                 {line.variable && (
-                  <span className="shrink-0 rounded bg-chart-2/15 px-1.5 py-0.5 text-xs font-semibold text-chart-2">
+                  <span className={simple ? "shrink-0 text-xs font-semibold text-chart-2" : "shrink-0 rounded bg-chart-2/15 px-1.5 py-0.5 text-xs font-semibold text-chart-2"}>
                     {line.variable}
                   </span>
                 )}
@@ -83,16 +91,19 @@ export function ConsolePanel({
             return (
               <div
                 key={idx}
-                className="my-1 flex items-center justify-between gap-2 rounded-md border-l-4 border-l-primary bg-primary/5 p-2 transition-colors hover:bg-primary/10"
+                className={simple
+                  ? "flex items-center gap-1.5 py-0.5"
+                  : "my-1 flex items-center justify-between gap-2 rounded-md border-l-4 border-l-primary bg-primary/5 p-2 transition-colors hover:bg-primary/10"
+                }
                 onMouseEnter={() => line.variable && onHoverVariable?.({ name: line.variable, line: line.sourceLine })}
                 onMouseLeave={() => onHoverVariable?.(null)}
               >
-                <div className="flex items-start gap-2">
-                  <Terminal className="mt-0.5 size-4 shrink-0 text-primary" />
-                  <span className="whitespace-pre-wrap text-foreground">{line.text}</span>
+                <div className="flex items-start gap-1.5">
+                  {simple ? null : <Terminal className="mt-0.5 size-4 shrink-0 text-primary" />}
+                  <span className="whitespace-pre-wrap">{line.text}</span>
                 </div>
                 {line.variable && (
-                  <span className="shrink-0 rounded bg-primary/15 px-1.5 py-0.5 text-xs font-semibold text-primary">
+                  <span className={simple ? "shrink-0 text-xs font-semibold text-primary" : "shrink-0 rounded bg-primary/15 px-1.5 py-0.5 text-xs font-semibold text-primary"}>
                     {line.variable}
                   </span>
                 )}
@@ -101,15 +112,15 @@ export function ConsolePanel({
           }
 
           return (
-            <div key={idx} className="my-1 whitespace-pre-wrap text-muted-foreground italic">
+            <div key={idx} className={simple ? "whitespace-pre-wrap text-muted-foreground py-0.5" : "my-1 whitespace-pre-wrap text-muted-foreground italic"}>
               {line.text}
             </div>
           )
         })}
 
         {waitingForInput && (
-          <div className="mt-1 flex items-center gap-2">
-            <ChevronRight className="size-4 shrink-0 text-primary" />
+          <div className={simple ? "flex items-center gap-1.5 py-0.5" : "mt-1 flex items-center gap-2"}>
+            <ChevronRight className={simple ? "size-3 shrink-0 text-primary" : "size-4 shrink-0 text-primary"} />
             <input
               ref={inputRef}
               value={input}
@@ -117,7 +128,7 @@ export function ConsolePanel({
               onKeyDown={(e) => {
                 if (e.key === "Enter") submit()
               }}
-              className="flex-1 border-b border-primary/50 bg-transparent pb-0.5 text-foreground outline-none"
+              className={simple ? "flex-1 border-b border-primary/50 bg-transparent text-xs outline-none" : "flex-1 border-b border-primary/50 bg-transparent pb-0.5 text-foreground outline-none"}
               placeholder="Escribe un valor y presiona Enter…"
               aria-label="Entrada del programa"
             />
