@@ -141,7 +141,7 @@ function DropdownMenuContent({
   className,
   centerScreen = false,
 }: DropdownMenuContentProps) {
-  const { open, setOpen, triggerRef } = useDropdownMenuContext()
+  const { open, triggerRef } = useDropdownMenuContext()
   const [position, setPosition] = React.useState({ top: 0, left: 0, transform: "" })
   const [visible, setVisible] = React.useState(false)
 
@@ -250,7 +250,6 @@ function DropdownMenuContent({
           visible ? `animate-in fade-in-0 ${zoomClass} ${slideClass}`.trim() : "animate-out fade-out-0 zoom-out-95",
           className
         )}
-        onClick={() => setOpen(false)}
       >
         {children}
       </div>
@@ -290,6 +289,8 @@ interface DropdownMenuItemProps {
   className?: string
   variant?: "default" | "destructive"
   inset?: boolean
+  // When false, clicking the item keeps the menu open.
+  closeOnSelect?: boolean
 }
 
 function DropdownMenuItem({
@@ -298,11 +299,17 @@ function DropdownMenuItem({
   className,
   variant = "default",
   inset,
+  closeOnSelect = true,
 }: DropdownMenuItemProps) {
+  const { setOpen } = useDropdownMenuContext()
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={(e) => {
+        if (closeOnSelect === false) e.stopPropagation()
+        onClick?.()
+        if (closeOnSelect !== false) setOpen(false)
+      }}
       className={cn(
         "group/dropdown-menu-item relative flex w-full cursor-default items-center gap-1.5 rounded-md px-1.5 py-1 text-sm outline-none select-none",
         "focus:bg-accent focus:text-accent-foreground",

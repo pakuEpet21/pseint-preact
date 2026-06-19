@@ -9,8 +9,6 @@ import {
   Plus,
   X,
   FileCode2,
-  Check,
-  Trash2,
   PanelLeftOpen,
   Settings,
   Cloud,
@@ -27,6 +25,7 @@ import { SnippetPanel } from "@/components/snippet-panel"
 import { ConsolePanel } from "@/components/console-panel"
 import { VariableInspector } from "@/components/variable-inspector"
 import { FlowchartPanel } from "@/components/flowchart-panel"
+import { SettingsDialog } from "@/components/settings-dialog"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -94,6 +93,10 @@ export function PseintIDE() {
   // Visual theme: "light", "dark" (default) or "dracula".
   const [theme, setTheme] = useState<"light" | "dark" | "dracula">("dracula")
   const [fontSize, setFontSize] = useState(14)
+  // Strict mode: requires Algoritmo/FinAlgoritmo and declared variables.
+  const [strictMode, setStrictMode] = useState(false)
+  // Settings modal visibility.
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [tabPendingClose, setTabPendingClose] = useState<FileTab | null>(null)
   const [editingTabId, setEditingTabId] = useState<string | null>(null)
   const [editingTabName, setEditingTabName] = useState("")
@@ -119,7 +122,7 @@ export function PseintIDE() {
 
   const active = tabs.find((t) => t.id === activeId) ?? tabs[0]
 
-  // Load saved theme and font size on mount.
+  // Load saved theme, font size and strict mode on mount.
   useEffect(() => {
     const savedTheme = localStorage.getItem("pseint:theme")
     if (savedTheme === "light" || savedTheme === "dark" || savedTheme === "dracula") setTheme(savedTheme)
@@ -128,6 +131,8 @@ export function PseintIDE() {
       const n = Number.parseInt(savedFont, 10)
       if (!Number.isNaN(n) && n >= 10 && n <= 24) setFontSize(n)
     }
+    const savedStrict = localStorage.getItem("pseint:strictMode")
+    if (savedStrict) setStrictMode(savedStrict === "true")
   }, [])
 
   // Apply the theme class to <html> and persist it.
@@ -142,6 +147,11 @@ export function PseintIDE() {
   useEffect(() => {
     localStorage.setItem("pseint:fontSize", String(fontSize))
   }, [fontSize])
+
+  // Persist strict mode.
+  useEffect(() => {
+    localStorage.setItem("pseint:strictMode", String(strictMode))
+  }, [strictMode])
 
   useEffect(() => {
     if (!editingTabId || !renameInputRef.current) return
@@ -467,6 +477,7 @@ export function PseintIDE() {
       requestInput,
       signal: abortRef.current,
       onVariables: setVars,
+      strictMode,
     })
     appendLine({ type: "info", text: "--- Ejecución finalizada ---" })
     setRunning(false)
@@ -511,7 +522,7 @@ export function PseintIDE() {
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [running, active, tabPendingClose])
+  }, [running, active, tabPendingClose, strictMode])
 
   // Resizable split: drag the divider to change the console width (desktop).
   useEffect(() => {
@@ -600,66 +611,29 @@ export function PseintIDE() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <DropdownMenu>
-            <Tooltip >
-              <TooltipTrigger asChild>
-                <DropdownMenuTrigger
-                  className="flex cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  <Settings className="size-4" />
-                </DropdownMenuTrigger>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">Configuración</TooltipContent>
-            </Tooltip>
-            <DropdownMenuContent centerScreen className="w-56">
-              <div className="px-2 py-1.5 text-sm font-medium">Tema visual</div>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setTheme("light")}>
-                <span className="size-3.5 rounded-full bg-[oklch(0.97_0_0)] ring-1 ring-border" />
-                Light
-                {theme === "light" && <Check className="ml-auto size-4" />}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTheme("dark")}>
-                <span className="size-3.5 rounded-full bg-[oklch(0.62_0.17_250)]" />
-                Dark
-                {theme === "dark" && <Check className="ml-auto size-4" />}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTheme("dracula")}>
-                <span className="size-3.5 rounded-full bg-[oklch(0.75_0.16_305)]" />
-                Dracula
-                {theme === "dracula" && <Check className="ml-auto size-4" />}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <div className="px-2 py-1.5 text-sm font-medium">Tamaño de fuente</div>
-              <div className="flex items-center justify-between px-2 py-1">
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); setFontSize((s) => Math.max(10, s - 1)) }}
-                  className="flex size-7 items-center justify-center rounded-md border border-border text-sm hover:bg-accent"
-                  aria-label="Disminuir fuente"
-                >
-                  -
-                </button>
-                <span className="text-sm tabular-nums">{fontSize}px</span>
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); setFontSize((s) => Math.min(24, s + 1)) }}
-                  className="flex size-7 items-center justify-center rounded-md border border-border text-sm hover:bg-accent"
-                  aria-label="Aumentar fuente"
-                >
-                  +
-                </button>
-              </div>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={resetWorkspace}
-                className="text-destructive"
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={() => setSettingsOpen(true)}
+                className="flex cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
-                <Trash2 className="size-4" />
-                Reiniciar espacio de trabajo
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                <Settings className="size-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Configuración</TooltipContent>
+          </Tooltip>
+          <SettingsDialog
+            open={settingsOpen}
+            onOpenChange={setSettingsOpen}
+            theme={theme}
+            setTheme={setTheme}
+            fontSize={fontSize}
+            setFontSize={setFontSize}
+            strictMode={strictMode}
+            setStrictMode={setStrictMode}
+            onResetWorkspace={resetWorkspace}
+          />
           {running ? (
             <button
               onClick={stop}

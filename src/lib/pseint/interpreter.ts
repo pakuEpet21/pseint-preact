@@ -29,6 +29,9 @@ export interface RunOptions {
   signal?: { aborted: boolean }
   // Called once the program finishes with the final global variables.
   onVariables?: (vars: VarSnapshot[]) => void
+  // When true, the parser requires Algoritmo/FinAlgoritmo and
+  // the runtime requires variables to be declared before use.
+  strictMode?: boolean
 }
 
 type Value = number | string | boolean | Value[]
@@ -61,10 +64,12 @@ class Parser {
   pos = 0
   functions: Record<string, Node> = {}
   errors: PseintError[] = []
+  strictMode: boolean
 
-  constructor(tokens: Token[]) {
+  constructor(tokens: Token[], strictMode = false) {
     // Filter nothing; keep newlines as statement separators
     this.tokens = tokens
+    this.strictMode = strictMode
   }
 
   reportError(message: string, line: number, hint?: string) {
@@ -121,6 +126,7 @@ class Parser {
     const body: Node[] = []
     this.skipNewlines()
     // Optional: Algoritmo/Proceso <name> ... wrapper, and function defs
+    let hasAlgorithm = false
     while (this.peek().type !== "eof") {
       this.skipNewlines()
       if (this.peek().type === "eof") break
@@ -138,6 +144,7 @@ class Parser {
         }
 
         if (this.isKw("algoritmo") || this.isKw("proceso")) {
+          hasAlgorithm = true
           this.next() // keyword
           // name (ident or keyword-ish) until newline
           while (this.peek().type !== "newline" && this.peek().type !== "eof")
@@ -160,6 +167,13 @@ class Parser {
         }
       }
       this.skipNewlines()
+    }
+    if (this.strictMode && !hasAlgorithm) {
+      this.reportError(
+        'En modo estricto el programa debe comenzar con "Algoritmo" y terminar con "FinAlgoritmo".',
+        this.peek().line,
+        'Agregá "Algoritmo Nombre" al inicio y "FinAlgoritmo" al final del programa.',
+      )
     }
     return { type: "Program", body, functions: this.functions }
   }
@@ -712,10 +726,12 @@ class Interpreter {
   opts: RunOptions
   steps = 0
   maxSteps = 1_000_000
+  strictMode: boolean
 
   constructor(program: Node, opts: RunOptions) {
     this.program = program
     this.opts = opts
+    this.strictMode = opts.strictMode ?? false
   }
 
   async run() {
@@ -813,6 +829,13 @@ class Interpreter {
       }
       case "Leer": {
         for (const target of node.targets) {
+          if (this.strictMode && !scope.get(target.name)) {
+            throw new PseintError(
+              `En modo estricto la variable "${target.name}" debe estar definida antes de Leer`,
+              node.line || 0,
+              `Definí la variable antes con: Definir ${target.name} Como <Tipo>`,
+            )
+          }
           const raw = await this.opts.requestInput("")
           const existing = scope.get(target.name)
           const declared = existing?.declaredType
@@ -1429,13 +1452,16 @@ function runtimeHint(message: string): string | undefined {
   return undefined
 }
 
-export function parsePseint(source: string): {
+export function parsePseint(
+  source: string,
+  strictMode = false,
+): {
   program: Node | null
   errors: { message: string; line?: number; hint?: string }[]
 } {
   try {
     const tokens = tokenize(source)
-    const parser = new Parser(tokens)
+    const parser = new Parser(tokens, strictMode)
     const program = parser.parseProgram()
     const errors = parser.errors.map((e) => ({
       message: e.message,
@@ -1454,7 +1480,7 @@ export function parsePseint(source: string): {
 }
 
 export async function runPseint(source: string, opts: RunOptions): Promise<void> {
-  const { program, errors } = parsePseint(source)
+  const { program, errors } = parsePseint(source, opts.strictMode)
 
   if (errors.length > 0) {
     for (const err of errors) {
