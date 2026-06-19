@@ -105,6 +105,12 @@ export function PseintIDE() {
   const [strictMode, setStrictMode] = useState(true)
   // Compact console mode: single line per entry, less spacing.
   const [consoleSimple, setConsoleSimple] = useState(false)
+  // Font family used for console output.
+  const [consoleFont, setConsoleFont] = useState("ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace")
+  // Font family used for the code editor.
+  const [editorFont, setEditorFont] = useState("ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace")
+  // Font size used for console output.
+  const [consoleFontSize, setConsoleFontSize] = useState(14)
   // Settings modal visibility.
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [tabPendingClose, setTabPendingClose] = useState<FileTab | null>(null)
@@ -153,6 +159,15 @@ export function PseintIDE() {
     if (savedStrict) setStrictMode(savedStrict === "true")
     const savedConsoleSimple = localStorage.getItem("pseint:consoleSimple")
     if (savedConsoleSimple) setConsoleSimple(savedConsoleSimple === "true")
+    const savedConsoleFont = localStorage.getItem("pseint:consoleFont")
+    if (savedConsoleFont) setConsoleFont(savedConsoleFont)
+    const savedEditorFont = localStorage.getItem("pseint:editorFont")
+    if (savedEditorFont) setEditorFont(savedEditorFont)
+    const savedConsoleFontSize = localStorage.getItem("pseint:consoleFontSize")
+    if (savedConsoleFontSize) {
+      const n = Number.parseInt(savedConsoleFontSize, 10)
+      if (!Number.isNaN(n) && n >= 10 && n <= 24) setConsoleFontSize(n)
+    }
   }, [])
 
   // Apply the theme class to <html> and persist it.
@@ -177,6 +192,21 @@ export function PseintIDE() {
   useEffect(() => {
     localStorage.setItem("pseint:consoleSimple", String(consoleSimple))
   }, [consoleSimple])
+
+  // Persist console font family.
+  useEffect(() => {
+    localStorage.setItem("pseint:consoleFont", consoleFont)
+  }, [consoleFont])
+
+  // Persist editor font family.
+  useEffect(() => {
+    localStorage.setItem("pseint:editorFont", editorFont)
+  }, [editorFont])
+
+  // Persist console font size.
+  useEffect(() => {
+    localStorage.setItem("pseint:consoleFontSize", String(consoleFontSize))
+  }, [consoleFontSize])
 
   useEffect(() => {
     if (!editingTabId || !renameInputRef.current) return
@@ -696,21 +726,29 @@ export function PseintIDE() {
             setStrictMode={setStrictMode}
             consoleSimple={consoleSimple}
             setConsoleSimple={setConsoleSimple}
+            consoleFont={consoleFont}
+            setConsoleFont={setConsoleFont}
+            editorFont={editorFont}
+            setEditorFont={setEditorFont}
+            consoleFontSize={consoleFontSize}
+            setConsoleFontSize={setConsoleFontSize}
           />
-          {!running && (
+    
             <button
               onClick={() => void run(true)}
               title="Depurar paso a paso"
-              className="flex cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent"
+              disabled={running }
+              className={`${running ? "bg-muted text-muted-foreground": " hover:bg-accent hover:brightness-110"} flex cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm font-medium transition-colors
+               duration-200`}
             >
               <Bug className="size-4" />
-              <span className="hidden md:flex font-bold">Depurar</span>
+              <span className="hidden md:flex font-bold"> Depurar</span>
             </button>
-          )}
+       
           {running ? (
             <button
               onClick={stop}
-              className="flex cursor-pointer items-center gap-1.5 rounded-md bg-destructive px-3 py-1.5 text-sm font-medium text-white transition-colors hover:opacity-90"
+              className="flex cursor-pointer items-center gap-1.5  w-28  flex items-center justify-center rounded-md bg-destructive px-3 py-1.5 text-sm font-medium text-white transition-colors hover:brightness-110 duration-200"
             >
               <Square className="size-4" />
               Detener
@@ -719,9 +757,9 @@ export function PseintIDE() {
             <button
               onClick={() => void run()}
               title="Ejecutar (Ctrl+Enter)"
-              className="flex cursor-pointer items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:opacity-90"
+              className="flex cursor-pointer items-center gap-1.5 rounded-md bg-primary w-28 flex items-center justify-center  px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:brightness-110 duration-200"
             >
-              <Play className="stroke-3 size-4" />
+              <Play className="stroke-2 size-4" />
               <span className="hidden md:flex font-bold">Ejecutar</span>
             </button>
           )}
@@ -864,7 +902,7 @@ export function PseintIDE() {
 
           {/* Editor */}
           <div className="min-h-0 flex-1">
-            <CodeEditor ref={editorRef} value={active.content} onChange={updateActiveContent} errorLines={errorLines} onUndo={undo} onRedo={redo} highlightVariable={hoveredVariable} highlightLine={debugActive ? debugLine : null} fontSize={fontSize} />
+            <CodeEditor ref={editorRef} value={active.content} onChange={updateActiveContent} errorLines={errorLines} onUndo={undo} onRedo={redo} highlightVariable={hoveredVariable} highlightLine={debugActive ? debugLine : null} fontSize={fontSize} editorFont={editorFont} />
           </div>
         </section>
 
@@ -937,14 +975,23 @@ export function PseintIDE() {
               {debugActive && (
                 <div className="flex items-center justify-between border-b border-border bg-sidebar px-3 py-2">
                   <div className="flex items-center gap-2">
+                  {/*   <button
+                      type="button"
+                      onClick={stepDebug}
+                      disabled={!debugPaused || waitingForInput}
+                      className="flex cursor-pointer items-center gap-1.5 rounded-md bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <StepBack className="size-3.5" />
+                       Paso
+                    </button> */}
                     <button
                       type="button"
                       onClick={stepDebug}
                       disabled={!debugPaused || waitingForInput}
                       className="flex cursor-pointer items-center gap-1.5 rounded-md bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                     >
+                     Paso
                       <StepForward className="size-3.5" />
-                      Paso
                     </button>
                    {/*  <button
                       type="button"
@@ -979,8 +1026,10 @@ export function PseintIDE() {
                 onSubmitInput={submitInput}
                 onHoverVariable={setHoveredVariable}
                 simple={consoleSimple}
+                consoleFont={consoleFont}
+                consoleFontSize={consoleFontSize}
               />
-              <VariableInspector vars={debugActive ? debugVars : vars} />
+              <VariableInspector vars={debugActive ? debugVars : vars} fontSize={consoleFontSize} />
             </div>
           ) : (
             <FlowchartPanel code={active.content} />

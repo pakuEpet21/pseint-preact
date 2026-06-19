@@ -8,6 +8,8 @@ interface Props {
   onSubmitInput: (value: string) => void
   onHoverVariable?: (variable: { name: string; line?: number } | null) => void
   simple?: boolean
+  consoleFont?: string
+  consoleFontSize?: number
 }
 
 export function ConsolePanel({
@@ -16,6 +18,8 @@ export function ConsolePanel({
   onSubmitInput,
   onHoverVariable,
   simple = false,
+  consoleFont,
+  consoleFontSize,
 }: Props) {
   const [input, setInput] = useState("")
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -34,12 +38,22 @@ export function ConsolePanel({
     setInput("")
   }
 
+  const consoleStyle: Record<string, string | undefined> = {}
+  if (consoleFont) consoleStyle.fontFamily = consoleFont
+  if (consoleFontSize) {
+    consoleStyle.fontSize = `${consoleFontSize}px`
+    consoleStyle.lineHeight = simple ? `${consoleFontSize * 1.25}px` : `${consoleFontSize * 1.5}px`
+  }
+
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">
-      <div className={simple
-        ? "min-h-0 flex-1 overflow-auto px-2 py-1 font-mono text-xs leading-4"
-        : "min-h-0 flex-1 overflow-auto px-3 py-2 font-mono text-sm leading-6"
-      }>
+      <div
+        className={simple
+          ? `min-h-0 flex-1 overflow-auto px-2 py-1 ${consoleFont ? "" : "font-mono"} ${consoleFontSize ? "" : simple ? "text-xs leading-4" : "text-sm leading-6"}`
+          : `min-h-0 flex-1 overflow-auto px-3 py-2 ${consoleFont ? "" : "font-mono"} ${consoleFontSize ? "" : "text-sm leading-6"}`
+        }
+        style={Object.keys(consoleStyle).length > 0 ? consoleStyle : undefined}
+      >
         {lines.length === 0 && !waitingForInput && (
           <p className="text-muted-foreground">
             La salida de tu programa aparecerá aquí. Pulsa{" "}

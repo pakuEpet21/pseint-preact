@@ -8,6 +8,8 @@ export interface FlowNode {
   width: number
   height: number
   color?: string
+  /** True for Definir nodes that can be hidden via toggle. */
+  isDeclaration?: boolean
 }
 
 export interface FlowArrow {
@@ -172,8 +174,27 @@ function layoutBlock(stmts: any[], startX: number, startY: number, prevNode?: Fl
         break
       }
 
+      case "Definir": {
+        const text = stmtToLabel(stmt)
+        if (text) {
+          const node: FlowNode = {
+            kind: "process",
+            text,
+            x: startX,
+            y,
+            width: PROC_W,
+            height: PROC_H,
+            isDeclaration: true,
+          }
+          connectTo(node)
+          addNode(node)
+          lastNode = node
+          y += ROW_H
+        }
+        break
+      }
+
       case "Assign":
-      case "Definir":
       case "Dimension":
       case "ExprStmt":
       case "Clear": {

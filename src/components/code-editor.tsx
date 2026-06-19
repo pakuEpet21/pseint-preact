@@ -107,6 +107,7 @@ interface Props {
   onRedo?: () => void
   highlightVariable?: { name: string; line?: number } | null
   fontSize?: number
+  editorFont?: string
 }
 
 function getWordAtCursor(value: string, cursorPos: number): string {
@@ -172,7 +173,7 @@ function getCursorPixelPosition(
 }
 
 export const CodeEditor = forwardRef<CodeEditorHandle, Props>(function CodeEditor(
-  { value, onChange, highlightLine, errorLines, onUndo, onRedo, highlightVariable, fontSize = 14 },
+  { value, onChange, highlightLine, errorLines, onUndo, onRedo, highlightVariable, fontSize = 14, editorFont },
   ref,
 ) {
   const taRef = useRef<HTMLTextAreaElement>(null)
@@ -391,7 +392,7 @@ export const CodeEditor = forwardRef<CodeEditorHandle, Props>(function CodeEdito
   const lh = fontSize * 1.5
 
   return (
-    <div className="relative flex h-full w-full overflow-hidden bg-card font-mono" style={{ fontSize: `${fontSize}px`, lineHeight: `${lh}px` }}>
+    <div className={`relative flex h-full w-full overflow-hidden bg-card ${editorFont ? "" : "font-mono"}`} style={{ fontSize: `${fontSize}px`, lineHeight: `${lh}px`, ...(editorFont ? { fontFamily: editorFont } : {}) }}>
       {/* gutter */}
       <div
         ref={gutterRef}
@@ -406,7 +407,7 @@ export const CodeEditor = forwardRef<CodeEditorHandle, Props>(function CodeEdito
           return (
             <div
               key={idx}
-              className={`relative px-3 ${isHighlight ? "bg-primary/20 text-foreground" : ""} ${isError ? "text-destructive font-semibold" : ""}`}
+              className={`relative px-3 ${isHighlight ? "bg-primary/20 text-primary border-primary border-r-2" : ""} ${isError ? "text-destructive font-semibold" : ""}`}
               style={{ height: `${lh}px` }}
             >
               <div className="flex gap-2 flex-row items-center justify-end">

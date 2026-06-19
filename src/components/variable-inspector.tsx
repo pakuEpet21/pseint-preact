@@ -4,9 +4,10 @@ import type { VarSnapshot } from "@/lib/pseint/interpreter"
 
 interface VariableInspectorProps {
   vars: VarSnapshot[]
+  fontSize?: number
 }
 
-export function VariableInspector({ vars }: VariableInspectorProps) {
+export function VariableInspector({ vars, fontSize }: VariableInspectorProps) {
   const [open, setOpen] = useState(true)
 
   if (!vars.length) return null
@@ -27,7 +28,10 @@ export function VariableInspector({ vars }: VariableInspectorProps) {
       </button>
       {open && (
         <div className="max-h-48 overflow-auto px-2 pb-2">
-          <table className="w-full text-left font-mono text-xs">
+          <table
+            className={`w-full text-left font-mono ${fontSize ? "" : "text-xs"}`}
+            style={fontSize ? { fontSize: `${fontSize}px` } : undefined}
+          >
             <thead className="sticky top-0 bg-sidebar text-muted-foreground">
               <tr>
                 <th className="px-2 py-1 font-medium">Nombre</th>

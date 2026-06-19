@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, useCallback, useEffect } from "preact/hooks"
-import { ZoomIn, ZoomOut, RotateCcw } from "lucide-react"
+import { ZoomIn, ZoomOut, RotateCcw, EyeOff } from "lucide-react"
 import {
   generateFlowchart,
   type FlowNode,
@@ -193,6 +193,7 @@ export function FlowchartPanel({ code }: Props) {
   const [tx, setTx] = useState(0)
   const [ty, setTy] = useState(0)
   const [panning, setPanning] = useState(false)
+  const [hideDeclarations, setHideDeclarations] = useState(false)
 
   const transformRef = useRef({ scale: 1, tx: 0, ty: 0 })
   transformRef.current = { scale, tx, ty }
@@ -348,6 +349,21 @@ export function FlowchartPanel({ code }: Props) {
 
   const vb = result.viewBox
 
+  // Filter declarations when hidden
+  const visibleNodes = hideDeclarations
+    ? result.nodes.filter((n) => !n.isDeclaration)
+    : result.nodes
+
+  // Also hide arrows whose target is a hidden declaration
+  const hiddenNodeKeys = new Set(
+    hideDeclarations
+      ? result.nodes.filter((n) => n.isDeclaration).map((n) => `${n.x}:${n.y}`)
+      : []
+  )
+  const visibleArrows = hideDeclarations
+    ? result.arrows.filter((a) => !hiddenNodeKeys.has(`${a.toX}:${a.toY}`))
+    : result.arrows
+
   return (
     <div className="relative h-full w-full select-none overflow-hidden bg-background">
       <svg
@@ -376,8 +392,8 @@ export function FlowchartPanel({ code }: Props) {
           </marker>
         </defs>
         <g transform={`translate(${tx},${ty}) scale(${scale})`}>
-          {result.arrows.map((a, i) => renderArrow(a, i))}
-          {result.nodes.map((n, i) => renderNode(n, i))}
+          {visibleArrows.map((a, i) => renderArrow(a, i))}
+          {visibleNodes.map((n, i) => renderNode(n, i))}
         </g>
       </svg>
 
@@ -407,6 +423,17 @@ export function FlowchartPanel({ code }: Props) {
           title="Restablecer vista"
         >
           <RotateCcw className="size-4" />
+        </button>
+        <div className="mx-auto h-px w-5 bg-border" />
+        <button
+          type="button"
+          onClick={() => setHideDeclarations((v) => !v)}
+          className={`flex size-8 items-center justify-center rounded-md transition-colors hover:bg-accent hover:text-foreground ${
+            hideDeclarations ? "text-primary" : "text-muted-foreground"
+          }`}
+          title={hideDeclarations ? "Mostrar definiciones" : "Ocultar definiciones"}
+        >
+          <EyeOff className="size-4" />
         </button>
       </div>
 

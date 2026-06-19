@@ -109,6 +109,7 @@ export const AUTOCOMPLETE_ITEMS: AutocompleteItem[] = [
   // Esperar
   { label: "Esperar", snippet: "Esperar ", category: "Control" },
   { label: "Esperar Tecla", snippet: "Esperar Tecla", category: "Control" },
+  { label: "Esperar Segundos", snippet: "Esperar 1 Segundos", category: "Control" },
 ]
 
 export function matchAutocomplete(prefix: string): AutocompleteItem[] {

@@ -259,11 +259,22 @@ class Parser {
           // optional "Pantalla"
           if (this.isKw("pantalla")) this.next()
           return { type: "Clear", line }
-        case "esperar":
-          // Esperar Tecla / Esperar <n> Segundos -> ignore
-          while (this.peek().type !== "newline" && this.peek().type !== "eof")
+        case "esperar": {
+          this.next() // consume 'esperar'
+          if (this.isKw("tecla")) {
             this.next()
-          return { type: "Noop", line }
+            // Wait for key is not supported in the browser console; treat as no-op.
+            return { type: "Noop", line }
+          }
+          const expr = this.parseExpr()
+          const next = this.peek()
+          if (
+            (next.type === "keyword" || next.type === "ident") &&
+            (next.value.toLowerCase() === "segundos" || next.value.toLowerCase() === "segundo")
+          )
+            this.next()
+          return { type: "Wait", expr, line }
+        }
         case "finalgoritmo":
         case "finproceso":
         case "finsi":
@@ -802,6 +813,19 @@ class Interpreter {
         this.opts.onOutput({ type: "info", text: "\u0001CLEAR\u0001" })
         await this.maybePause(node.line || 0, scope)
         return
+      case "Wait": {
+        const totalMs = this.toNum(await this.evalAsync(node.expr, scope)) * 1000
+        const start = Date.now()
+        while (Date.now() - start < totalMs) {
+          if (this.opts.signal?.aborted)
+            throw new PseintError("Ejecución detenida por el usuario", node.line || 0)
+          await new Promise((resolve) =>
+            setTimeout(resolve, Math.min(100, totalMs - (Date.now() - start))),
+          )
+        }
+        await this.maybePause(node.line || 0, scope)
+        return
+      }
       case "Definir":
         for (const n of node.names) {
           if (scope.get(n)) {
