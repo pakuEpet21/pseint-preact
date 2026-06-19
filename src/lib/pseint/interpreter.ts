@@ -32,6 +32,11 @@ export interface RunOptions {
   // When true, the parser requires Algoritmo/FinAlgoritmo and
   // the runtime requires variables to be declared before use.
   strictMode?: boolean
+  // When true, the interpreter pauses before each statement and loop iteration.
+  debug?: boolean
+  // Called before each statement/iteration when debug is true.
+  // The returned Promise resolves when execution should continue.
+  onStep?: (line: number, vars: VarSnapshot[]) => Promise<void>
 }
 
 type Value = number | string | boolean | Value[]
@@ -743,24 +748,30 @@ class Interpreter {
     }
   }
 
+  captureVariables(scope: Scope): VarSnapshot[] {
+    return Object.entries(scope.vars).map(([name, v]) => {
+      let type: string
+      if (Array.isArray(v.value)) {
+        type = v.dims ? `Arreglo[${v.dims.join(", ")}]` : "Arreglo"
+      } else if (typeof v.value === "number") {
+        type = Number.isInteger(v.value) ? "Entero" : "Real"
+      } else if (typeof v.value === "boolean") {
+        type = "Lógico"
+      } else {
+        type = "Cadena"
+      }
+      return { name, type, value: formatValue(v.value) }
+    })
+  }
+
   emitVariables(scope: Scope) {
     if (!this.opts.onVariables) return
-    const snapshot: VarSnapshot[] = Object.entries(scope.vars).map(
-      ([name, v]) => {
-        let type: string
-        if (Array.isArray(v.value)) {
-          type = v.dims ? `Arreglo[${v.dims.join(", ")}]` : "Arreglo"
-        } else if (typeof v.value === "number") {
-          type = Number.isInteger(v.value) ? "Entero" : "Real"
-        } else if (typeof v.value === "boolean") {
-          type = "Lógico"
-        } else {
-          type = "Cadena"
-        }
-        return { name, type, value: formatValue(v.value) }
-      },
-    )
-    this.opts.onVariables(snapshot)
+    this.opts.onVariables(this.captureVariables(scope))
+  }
+
+  async maybePause(line: number, scope: Scope) {
+    if (!this.opts.debug || !this.opts.onStep) return
+    await this.opts.onStep(line, this.captureVariables(scope))
   }
 
   tick(line: number) {
@@ -784,6 +795,7 @@ class Interpreter {
 
   async execStmt(node: Node, scope: Scope): Promise<any> {
     this.tick(node.line || 0)
+    await this.maybePause(node.line || 0, scope)
     switch (node.type) {
       case "Noop":
         return
@@ -868,6 +880,7 @@ class Interpreter {
       case "While": {
         while (this.toBool(await this.evalAsync(node.cond, scope))) {
           this.tick(node.line)
+          await this.maybePause(node.line, scope)
           const r = await this.execBlock(node.body, scope)
           if (r && r.kind === "return") return r
         }
@@ -876,6 +889,7 @@ class Interpreter {
       case "Repeat": {
         do {
           this.tick(node.line)
+          await this.maybePause(node.line, scope)
           const r = await this.execBlock(node.body, scope)
           if (r && r.kind === "return") return r
         } while (!this.toBool(await this.evalAsync(node.cond, scope)))
@@ -890,6 +904,7 @@ class Interpreter {
           for (; i <= to; i += step) {
             scope.set(node.varName, { value: i })
             this.tick(node.line)
+            await this.maybePause(node.line, scope)
             const r = await this.execBlock(node.body, scope)
             if (r && r.kind === "return") return r
             i = this.toNum(scope.get(node.varName)!.value)
@@ -898,6 +913,7 @@ class Interpreter {
           for (; i >= to; i += step) {
             scope.set(node.varName, { value: i })
             this.tick(node.line)
+            await this.maybePause(node.line, scope)
             const r = await this.execBlock(node.body, scope)
             if (r && r.kind === "return") return r
             i = this.toNum(scope.get(node.varName)!.value)
