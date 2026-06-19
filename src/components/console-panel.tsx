@@ -68,7 +68,7 @@ export function ConsolePanel({
               <div
                 key={idx}
                 className={simple
-                  ? "flex items-center gap-1.5 py-0.5 text-chart-2"
+                  ? "flex items-center justify-between gap-1.5 py-0.5 text-chart-2"
                   : "my-1 flex items-center justify-between gap-2 rounded-md border-l-4 border-l-chart-2 bg-chart-2/5 p-2 transition-colors hover:bg-chart-2/10"
                 }
                 onMouseEnter={() => line.variable && onHoverVariable?.({ name: line.variable, line: line.sourceLine })}
@@ -79,7 +79,7 @@ export function ConsolePanel({
                   <span className="whitespace-pre-wrap font-medium">{line.text}</span>
                 </div>
                 {line.variable && (
-                  <span className={simple ? "shrink-0 text-xs font-semibold text-chart-2" : "shrink-0 rounded bg-chart-2/15 px-1.5 py-0.5 text-xs font-semibold text-chart-2"}>
+                  <span className={simple ? "shrink-0 text-xs text-muted-foreground" : "shrink-0 rounded bg-chart-2/15 px-1.5 py-0.5 text-xs font-semibold text-chart-2"}>
                     {line.variable}
                   </span>
                 )}
@@ -92,7 +92,7 @@ export function ConsolePanel({
               <div
                 key={idx}
                 className={simple
-                  ? "flex items-center gap-1.5 py-0.5"
+                  ? "flex items-center justify-between gap-1.5 py-0.5"
                   : "my-1 flex items-center justify-between gap-2 rounded-md border-l-4 border-l-primary bg-primary/5 p-2 transition-colors hover:bg-primary/10"
                 }
                 onMouseEnter={() => line.variable && onHoverVariable?.({ name: line.variable, line: line.sourceLine })}
@@ -103,7 +103,7 @@ export function ConsolePanel({
                   <span className="whitespace-pre-wrap">{line.text}</span>
                 </div>
                 {line.variable && (
-                  <span className={simple ? "shrink-0 text-xs font-semibold text-primary" : "shrink-0 rounded bg-primary/15 px-1.5 py-0.5 text-xs font-semibold text-primary"}>
+                  <span className={simple ? "shrink-0 text-xs text-muted-foreground" : "shrink-0 rounded bg-primary/15 px-1.5 py-0.5 text-xs font-semibold text-primary"}>
                     {line.variable}
                   </span>
                 )}

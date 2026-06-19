@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "preact/hooks"
 import type { MouseEvent, ChangeEvent, CSSProperties } from "preact/compat"
+import { flushSync } from "react-dom"
 
 import {
   Play,
@@ -482,12 +483,17 @@ export function PseintIDE() {
 
   const onStep = useCallback(async (line: number, vars: VarSnapshot[]) => {
     if (!debugControllerRef.current.active) return
-    setDebugLine(line)
-    setDebugVars(vars)
     if (debugControllerRef.current.continueMode) {
-      setDebugPaused(false)
+      // In continue mode, flush sync so the highlight updates immediately
+      flushSync(() => {
+        setDebugLine(line)
+        setDebugVars(vars)
+        setDebugPaused(false)
+      })
       return
     }
+    setDebugLine(line)
+    setDebugVars(vars)
     setDebugPaused(true)
     return new Promise<void>((resolve) => {
       debugControllerRef.current.resume = () => {

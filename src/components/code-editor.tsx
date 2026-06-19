@@ -390,6 +390,18 @@ export const CodeEditor = forwardRef<CodeEditorHandle, Props>(function CodeEdito
 
   const lh = fontSize * 1.5
 
+  // Scroll editor to debug line when it changes
+  useEffect(() => {
+    if (highlightLine == null || !taRef.current) return
+    const lineTop = (highlightLine - 1) * lh
+    const ta = taRef.current
+    const { scrollTop, clientHeight } = ta
+    // Only scroll if the line is outside the visible area with some margin
+    if (lineTop < scrollTop - lh || lineTop > scrollTop + clientHeight - lh * 2) {
+      ta.scrollTop = lineTop - clientHeight / 2
+    }
+  }, [highlightLine, lh])
+
   return (
     <div className="relative flex h-full w-full overflow-hidden bg-card font-mono" style={{ fontSize: `${fontSize}px`, lineHeight: `${lh}px` }}>
       {/* gutter */}
@@ -402,13 +414,10 @@ export const CodeEditor = forwardRef<CodeEditorHandle, Props>(function CodeEdito
         {lines.map((_, idx) => {
           const lineNum = idx + 1
           const isError = errorLines?.includes(lineNum)
-          const isHighlight = highlightLine === lineNum
           return (
             <div
               key={idx}
-              className={`relative px-3 ${
-                isHighlight ? "bg-primary/20 text-foreground" : ""
-              } ${isError ? "text-destructive font-semibold" : ""}`}
+              className={`relative px-3 ${isError ? "text-destructive font-semibold" : ""}`}
               style={{ height: `${lh}px` }}
             >
               <div className="flex gap-2 flex-row items-center justify-end">
@@ -424,6 +433,24 @@ export const CodeEditor = forwardRef<CodeEditorHandle, Props>(function CodeEdito
 
       {/* editor area */}
       <div className="relative flex-1 overflow-hidden">
+        {/* Full-line highlight layer */}
+        {highlightLine != null && (
+          <div
+            className="pointer-events-none absolute inset-0 overflow-hidden"
+            style={{ padding: "12px 0" }}
+          >
+            <div
+              className="bg-primary/20"
+              style={{
+                position: "absolute",
+                top: `${12 + (highlightLine - 1) * lh}px`,
+                left: "0",
+                right: "0",
+                height: `${lh}px`,
+              }}
+            />
+          </div>
+        )}
         <pre
           ref={preRef}
           aria-hidden="true"
