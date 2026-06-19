@@ -170,7 +170,7 @@ class Parser {
     }
     if (this.strictMode && !hasAlgorithm) {
       this.reportError(
-        'En modo estricto el programa debe comenzar con "Algoritmo" y terminar con "FinAlgoritmo".',
+        'El programa debe comenzar con "Algoritmo" y terminar con "FinAlgoritmo".',
         this.peek().line,
         'Agregá "Algoritmo Nombre" al inicio y "FinAlgoritmo" al final del programa.',
       )
@@ -831,7 +831,7 @@ class Interpreter {
         for (const target of node.targets) {
           if (this.strictMode && !scope.get(target.name)) {
             throw new PseintError(
-              `En modo estricto la variable "${target.name}" debe estar definida antes de Leer`,
+              `La variable "${target.name}" debe estar definida antes de Leer`,
               node.line || 0,
               `Definí la variable antes con: Definir ${target.name} Como <Tipo>`,
             )

@@ -60,7 +60,7 @@ function ThemeCard({
     >
       {icon}
       <span className="font-medium">{label}</span>
-      {active && <Check className="size-3.5" />}
+  
     </button>
   )
 }
