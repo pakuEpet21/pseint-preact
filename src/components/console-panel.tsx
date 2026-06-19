@@ -69,7 +69,7 @@ export function ConsolePanel({
                 key={idx}
                 className={simple
                   ? "flex items-center justify-between gap-1.5 py-0.5 text-chart-2"
-                  : "my-1 flex items-center justify-between gap-2 rounded-md border-l-4 border-l-chart-2 bg-chart-2/5 p-2 transition-colors hover:bg-chart-2/10"
+                  : "my-1 flex items-center justify-between gap-2 border-l-4 border-l-chart-2 bg-chart-2/5 px-2 py-1 transition-colors hover:bg-chart-2/10"
                 }
                 onMouseEnter={() => line.variable && onHoverVariable?.({ name: line.variable, line: line.sourceLine })}
                 onMouseLeave={() => onHoverVariable?.(null)}
@@ -93,7 +93,7 @@ export function ConsolePanel({
                 key={idx}
                 className={simple
                   ? "flex items-center justify-between gap-1.5 py-0.5"
-                  : "my-1 flex items-center justify-between gap-2 rounded-md border-l-4 border-l-primary bg-primary/5 p-2 transition-colors hover:bg-primary/10"
+                  : "my-1 flex items-center justify-between gap-2 border-l-4 border-l-primary bg-primary/5 px-2 py-1.5 transition-colors hover:bg-primary/10"
                 }
                 onMouseEnter={() => line.variable && onHoverVariable?.({ name: line.variable, line: line.sourceLine })}
                 onMouseLeave={() => onHoverVariable?.(null)}

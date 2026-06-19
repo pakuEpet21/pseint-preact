@@ -880,6 +880,7 @@ class Interpreter {
       }
       case "If": {
         const c = this.toBool(await this.evalAsync(node.cond, scope))
+        await this.maybePause(node.line || 0, scope)
         return await this.execBlock(c ? node.thenBody : node.elseBody, scope)
       }
       case "While": {

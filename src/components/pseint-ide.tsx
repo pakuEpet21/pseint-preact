@@ -509,12 +509,6 @@ export function PseintIDE() {
     debugControllerRef.current.resume?.()
   }
 
-  const continueDebug = () => {
-    if (!debugControllerRef.current.active) return
-    debugControllerRef.current.continueMode = true
-    debugControllerRef.current.resume?.()
-  }
-
   const run = async (debug = false) => {
     if (running) return
     setLines([])
