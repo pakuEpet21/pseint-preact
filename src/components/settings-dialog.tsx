@@ -129,13 +129,19 @@ export function SettingsDialog({
     return () => window.removeEventListener("keydown", onKey)
   }, [open, onOpenChange])
 
-  if (!open) return null
-
   return (
-    <div className="fixed inset-0 z-50">
+    <div
+      className={cn(
+        "fixed inset-0 z-50 transition-all duration-300",
+        open ? "visible opacity-100" : "invisible opacity-0"
+      )}
+    >
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/50  transition-opacity"
+        className={cn(
+          "absolute inset-0 bg-black/50 transition-all duration-300",
+          open ? "animate-in fade-in" : ""
+        )}
         onClick={() => onOpenChange(false)}
         aria-hidden="true"
       />
@@ -147,7 +153,13 @@ export function SettingsDialog({
           role="dialog"
           aria-modal="true"
           aria-labelledby="settings-title"
-          className="relative w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-2xl"
+          className={cn(
+            "relative w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-2xl",
+            "transition-all duration-300",
+            open
+              ? "animate-in zoom-in-95 slide-in-from-top-4 fade-in"
+              : "animate-out zoom-out-95 slide-out-to-top-4 fade-out"
+          )}
         >
           {/* Header */}
           <div className="flex items-center justify-between border-b border-border px-6 py-4">
