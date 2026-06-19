@@ -952,7 +952,7 @@ export function PseintIDE() {
                       <StepForward className="size-3.5" />
                       Paso
                     </button>
-                    <button
+                   {/*  <button
                       type="button"
                       onClick={continueDebug}
                       disabled={!debugPaused || waitingForInput}
@@ -960,15 +960,15 @@ export function PseintIDE() {
                     >
                       <Play className="size-3.5" />
                       Continuar
-                    </button>
-                    <button
+                    </button> */}
+                {/*     <button
                       type="button"
                       onClick={stop}
                       className="flex cursor-pointer items-center gap-1.5 rounded-md bg-destructive px-2.5 py-1.5 text-xs font-medium text-white transition-colors hover:opacity-90"
                     >
                       <Square className="size-3.5" />
                       Detener
-                    </button>
+                    </button> */}
                   </div>
                   <span className="text-xs text-muted-foreground">
                     {waitingForInput

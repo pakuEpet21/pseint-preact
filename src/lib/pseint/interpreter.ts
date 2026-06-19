@@ -795,12 +795,12 @@ class Interpreter {
 
   async execStmt(node: Node, scope: Scope): Promise<any> {
     this.tick(node.line || 0)
-    await this.maybePause(node.line || 0, scope)
     switch (node.type) {
       case "Noop":
         return
       case "Clear":
         this.opts.onOutput({ type: "info", text: "\u0001CLEAR\u0001" })
+        await this.maybePause(node.line || 0, scope)
         return
       case "Definir":
         for (const n of node.names) {
@@ -815,16 +815,19 @@ class Interpreter {
             declaredType: normalizeType(node.varType),
           })
         }
+        await this.maybePause(node.line || 0, scope)
         return
       case "Dimension":
         for (const d of node.decls) {
           const dims = d.dims.map((e: Node) => Math.floor(this.toNum(this.eval(e, scope))))
           scope.declare(d.name, { value: makeArray(dims), dims })
         }
+        await this.maybePause(node.line || 0, scope)
         return
       case "Assign": {
         const val = await this.evalAsync(node.expr, scope)
         this.assign(node.target, val, scope)
+        await this.maybePause(node.line || 0, scope)
         return
       }
       case "Escribir": {
@@ -837,6 +840,7 @@ class Interpreter {
           variable = formatLValue(node.args[0])
         }
         this.opts.onOutput({ type: "out", text: parts.join(""), variable, sourceLine: node.line })
+        await this.maybePause(node.line || 0, scope)
         return
       }
       case "Leer": {
@@ -848,6 +852,7 @@ class Interpreter {
               `Definí la variable antes con: Definir ${target.name} Como <Tipo>`,
             )
           }
+          await this.maybePause(node.line || 0, scope)
           const raw = await this.opts.requestInput("")
           const existing = scope.get(target.name)
           const declared = existing?.declaredType
@@ -935,6 +940,7 @@ class Interpreter {
       }
       case "ExprStmt":
         await this.evalAsync(node.expr, scope)
+        await this.maybePause(node.line || 0, scope)
         return
       default:
         throw new PseintError(`Sentencia desconocida: ${node.type}`, node.line || 0)
