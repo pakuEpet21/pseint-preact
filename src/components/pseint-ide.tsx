@@ -22,6 +22,7 @@ import {
   Terminal,
   Bug,
   StepForward,
+  Trash,
 } from "lucide-react"
 import { CodeEditor, type CodeEditorHandle } from "@/components/code-editor"
 import { SnippetPanel } from "@/components/snippet-panel"
@@ -834,7 +835,7 @@ export function PseintIDE() {
                   )}
                   <button
                     onClick={(e) => requestCloseTab(t.id, e)}
-                    className="cursor-pointer rounded p-0.5 opacity-0 transition-opacity hover:bg-accent group-hover:opacity-100"
+                    className="cursor-pointer rounded p-0.5 md:opacity-0 transition-opacity hover:bg-accent group-hover:opacity-100"
                     aria-label={`Cerrar ${t.name}`}
                   >
                     <X className="size-3.5" />
@@ -1051,24 +1052,24 @@ export function PseintIDE() {
           >
             <div className="flex items-start gap-3 border-b border-border px-5 py-4">
               <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-destructive/12 text-destructive">
-                <X className="size-5" />
+                <Trash className="size-5" />
               </div>
               <div className="min-w-0 flex-1">
                 <h2 id="close-file-title" className="text-base font-semibold">
-                  Cerrar archivo
+                  Eliminar
                 </h2>
                 <p
                   id="close-file-description"
                   className="mt-1 text-sm text-muted-foreground"
                 >
-                  Vas a cerrar <span className="font-medium text-foreground">{tabPendingClose.name}</span>.
+                  Vas a eliminar <span className="font-medium text-foreground">{tabPendingClose.name}</span>.
                 </p>
               </div>
             </div>
 
             <div className="px-5 py-4">
               <div className="rounded-xl border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-                Si continuás, la pestaña se cierra del editor actual.
+                Si continuás, no podras recuperar el archivo.
               </div>
             </div>
 
