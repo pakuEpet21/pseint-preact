@@ -748,16 +748,16 @@ export function PseintIDE() {
           {running ? (
             <button
               onClick={stop}
-              className="flex cursor-pointer items-center gap-1.5  w-28  flex items-center justify-center rounded-md bg-destructive px-3 py-1.5 text-sm font-medium text-white transition-colors hover:brightness-110 duration-200"
+              className="flex cursor-pointer items-center gap-1.5  md:w-28  flex items-center justify-center rounded-md bg-destructive px-3 py-1.5 text-sm font-medium text-white transition-colors hover:brightness-110 duration-200"
             >
               <Square className="size-4" />
-              Detener
+                           <span className="hidden md:flex font-bold">Detener</span>
             </button>
           ) : (
             <button
               onClick={() => void run()}
               title="Ejecutar (Ctrl+Enter)"
-              className="flex cursor-pointer items-center gap-1.5 rounded-md bg-primary w-28 flex items-center justify-center  px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:brightness-110 duration-200"
+              className="flex cursor-pointer items-center gap-1.5 rounded-md bg-primary md:w-28 flex items-center justify-center  px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:brightness-110 duration-200"
             >
               <Play className="stroke-2 size-4" />
               <span className="hidden md:flex font-bold">Ejecutar</span>
@@ -948,12 +948,7 @@ export function PseintIDE() {
               </button>
             </div>
             <div className="flex items-center gap-2">
-              {rightTab === "console" && running && (
-                <span className="flex items-center gap-1.5 text-xs text-primary">
-                  <span className="size-2 animate-pulse rounded-full bg-primary" />
-                  ejecutando…
-                </span>
-              )}
+            
               {rightTab === "console" && (
                 <button
                   onClick={() => {
