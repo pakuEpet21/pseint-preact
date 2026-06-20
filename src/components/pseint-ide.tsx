@@ -671,11 +671,46 @@ export function PseintIDE() {
         </div>
         <div className="flex items-center gap-2">
 
+          {/* Mobile: single collapsible "+" menu for Abrir / Descargar / Configurar */}
+          <DropdownMenu>
+            <Tooltip >
+              <TooltipTrigger asChild>
+                <DropdownMenuTrigger
+                  className="flex cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:hidden"
+                >
+                  <Plus className="size-4" />
+                </DropdownMenuTrigger>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Más opciones</TooltipContent>
+            </Tooltip>
+            <DropdownMenuContent side="bottom" className="w-48">
+              <DropdownMenuItem onClick={openFile}>
+                <FolderOpen className="mr-2 size-4" />
+                Abrir archivo
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => downloadFile("psc")}>
+                <Download className="mr-2 size-4" />
+                Descargar (.psc)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => downloadFile("txt")}>
+                <Download className="mr-2 size-4" />
+                Descargar (.txt)
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
+                <Settings className="mr-2 size-4" />
+                Configuración
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Desktop: separate buttons (md: and up) */}
           <Tooltip >
             <TooltipTrigger asChild>
               <button
                 onClick={openFile}
-                className="flex cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent"
+                className="hidden cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent md:flex"
               >
                 <FolderOpen className="size-4" />
               </button>
@@ -686,7 +721,7 @@ export function PseintIDE() {
             <Tooltip >
               <TooltipTrigger asChild>
                 <DropdownMenuTrigger
-                  className="flex cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="hidden cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:flex"
                 >
                   <Download className="size-4" />
                 </DropdownMenuTrigger>
@@ -709,7 +744,7 @@ export function PseintIDE() {
               <button
                 type="button"
                 onClick={() => setSettingsOpen(true)}
-                className="flex cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="hidden cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:flex"
               >
                 <Settings className="size-4" />
               </button>

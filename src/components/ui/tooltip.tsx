@@ -2,6 +2,18 @@ import * as React from "preact/compat"
 import { createPortal } from "preact/compat"
 import { cn } from "@/lib/utils"
 
+function useIsMobile() {
+  const [isMobile, setIsMobile] = React.useState(false)
+  React.useEffect(() => {
+    const mq = window.matchMedia("((pointer: coarse))")
+    setIsMobile(mq.matches)
+    const listener = (e: MediaQueryListEvent) => setIsMobile(e.matches)
+    mq.addEventListener("change", listener)
+    return () => mq.removeEventListener("change", listener)
+  }, [])
+  return isMobile
+}
+
 interface TooltipState {
   open: boolean
   triggerRect: DOMRect | null
@@ -112,6 +124,8 @@ function TooltipContent({
   className,
 }: TooltipContentProps) {
   const { state } = useTooltipContext()
+  const isMobile = useIsMobile()
+  if (isMobile) return null
   const [mounted, setMounted] = React.useState(false)
   const [visible, setVisible] = React.useState(false)
   const [position, setPosition] = React.useState({ top: 0, left: 0, transform: "" })
