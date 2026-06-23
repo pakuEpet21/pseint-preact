@@ -1,5 +1,5 @@
 import { useState } from "preact/hooks"
-import { ChevronRight, PanelLeftClose } from "lucide-react"
+import { ChevronRight, PanelBottomClose, PanelLeftClose, PanelTopClose } from "lucide-react"
 import { SNIPPET_CATEGORIES } from "@/lib/pseint/snippets"
 
 export function SnippetPanel({
@@ -25,7 +25,7 @@ export function SnippetPanel({
           title="Ocultar operaciones"
           aria-label="Ocultar operaciones"
         >
-          <PanelLeftClose className="size-4" />
+          <PanelTopClose className="size-4" />
         </button>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto">
