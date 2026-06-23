@@ -188,8 +188,8 @@ export function SettingsDialog({
                   active={theme === "light"}
                   onClick={() => setTheme("light")}
                   icon={
-                    <span className="flex size-8 items-center justify-center rounded-full bg-[oklch(0.97_0_0)] ring-1 ring-border">
-                      <Sun className="size-4 text-foreground" />
+                    <span className="hidden md:flex size-8 items-center justify-center rounded-full bg-[oklch(0.97_0_0)] ring-1 ring-border">
+                      <Sun className=" size-4 text-foreground" />
                     </span>
                   }
                 />
@@ -198,7 +198,7 @@ export function SettingsDialog({
                   active={theme === "dark"}
                   onClick={() => setTheme("dark")}
                   icon={
-                    <span className="flex size-8 items-center justify-center rounded-full bg-[oklch(0.62_0.17_250)] ring-1 ring-border">
+                    <span className="hidden md:flex size-8 items-center justify-center rounded-full bg-[oklch(0.62_0.17_250)] ring-1 ring-border">
                       <Moon className="size-4 text-white" />
                     </span>
                   }
@@ -208,7 +208,7 @@ export function SettingsDialog({
                   active={theme === "dracula"}
                   onClick={() => setTheme("dracula")}
                   icon={
-                    <span className="flex size-8 items-center justify-center rounded-full bg-[oklch(0.75_0.16_305)] ring-1 ring-border">
+                    <span className="hidden md:flex size-8 items-center justify-center rounded-full bg-[oklch(0.75_0.16_305)] ring-1 ring-border">
                       <Sparkles className="size-4 text-white" />
                     </span>
                   }
@@ -255,7 +255,7 @@ export function SettingsDialog({
                 <Switch checked={strictMode} onCheckedChange={setStrictMode} />
               </div>
 
-              <div className="rounded-xl bg-card ">
+            {/*   <div className="rounded-xl bg-card ">
                 <div className="mb-2">
                   <div className="text-sm font-medium">Fuente del editor</div>
                   <div className="text-xs text-muted-foreground">
@@ -275,7 +275,7 @@ export function SettingsDialog({
                   <option value="JetBrains Mono, monospace">JetBrains Mono</option>
                   <option value="Source Code Pro, monospace">Source Code Pro</option>
                 </select>
-              </div>
+              </div> */}
             </Section>
 
             <Section title="Consola">
@@ -289,7 +289,7 @@ export function SettingsDialog({
                 <Switch checked={consoleSimple} onCheckedChange={setConsoleSimple} />
               </div>
 
-              <div className="borde-2 border-b py-2 bg-card ">
+          {/*     <div className="borde-2 border-b py-2 bg-card ">
                 <div className="mb-2">
                   <div className="text-sm font-medium">Fuente de la consola</div>
                   <div className="text-xs text-muted-foreground">
@@ -309,7 +309,7 @@ export function SettingsDialog({
                   <option value="JetBrains Mono, monospace">JetBrains Mono</option>
                   <option value="Source Code Pro, monospace">Source Code Pro</option>
                 </select>
-              </div>
+              </div> */}
 
               <div className="flex items-center justify-between rounded-xl bg-card ">
                 <div>

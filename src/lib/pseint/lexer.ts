@@ -74,6 +74,8 @@ export const KEYWORDS = new Set([
   "caso",
   "esperar",
   "tecla",
+  "segundo",
+  "segundos",
   "limpiar",
   "pantalla",
 ])
