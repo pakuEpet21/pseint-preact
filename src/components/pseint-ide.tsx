@@ -23,6 +23,8 @@ import {
   Bug,
   StepForward,
   Trash,
+  PanelBottomOpen,
+  PanelTopOpen,
 } from "lucide-react"
 import { CodeEditor, type CodeEditorHandle } from "@/components/code-editor"
 import { SnippetPanel } from "@/components/snippet-panel"
@@ -824,6 +826,7 @@ export function PseintIDE() {
             title="Mostrar operaciones"
           >
             <PanelLeftOpen className="size-4" />
+            
             <span className="lg:[writing-mode:vertical-rl]">Operaciones</span>
           </button>
         )}
@@ -932,7 +935,7 @@ export function PseintIDE() {
               className="flex shrink-0 cursor-pointer items-center justify-center gap-1.5 border-l border-border bg-sidebar px-2.5 py-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground lg:hidden"
               title="Mostrar operaciones"
             >
-              <PanelLeftOpen className="size-4" />
+             <PanelTopOpen className=" size-4" />
             </button>
           </div>
 
