@@ -886,7 +886,7 @@ class Interpreter {
             const n = Number(t)
             if (t === "" || Number.isNaN(n))
               throw new PseintError(
-                `Se esperaba un número para "${target.name}" pero se ingresó "${raw}"`,
+                `Se esperaba un entero para "${target.name}" pero se ingresó "${raw}"`,
                 node.line || 0,
               )
             v = n

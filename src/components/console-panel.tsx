@@ -68,11 +68,11 @@ export function ConsolePanel({
                   <span className={simple ? "text-destructive" : "mt-0.5 text-destructive"}>●</span>
                   <span className="whitespace-pre-wrap text-destructive">{line.text}</span>
                 </div>
-                {!simple && line.hint && (
+                {/* {!simple && line.hint && (
                   <div className="mt-1 text-xs text-muted-foreground">
                     💡 {line.hint}
                   </div>
-                )}
+                )} */}
               </div>
             )
           }
