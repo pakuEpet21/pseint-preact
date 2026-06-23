@@ -130,6 +130,7 @@ interface DropdownMenuContentProps {
   sideOffset?: number
   className?: string
   centerScreen?: boolean
+  modalClassName?: string
 }
 
 function DropdownMenuContent({
@@ -141,7 +142,7 @@ function DropdownMenuContent({
   className,
   centerScreen = false,
 }: DropdownMenuContentProps) {
-  const { open, triggerRef } = useDropdownMenuContext()
+  const { open, setOpen, triggerRef } = useDropdownMenuContext()
   const [position, setPosition] = React.useState({ top: 0, left: 0, transform: "" })
   const [visible, setVisible] = React.useState(false)
 
@@ -241,6 +242,15 @@ function DropdownMenuContent({
 
   return (
     <DropdownMenuPortal>
+      {centerScreen && (
+        <div
+          className={cn(
+            "fixed inset-0 z-40 bg-black/50 backdrop-blur-sm",
+            visible ? "animate-in fade-in-0" : "animate-out fade-out-0"
+          )}
+          onClick={() => setOpen(false)}
+        />
+      )}
       <div
         data-dropdown-content=""
         style={style}
@@ -248,6 +258,7 @@ function DropdownMenuContent({
           "z-50 max-h-(--available-height) min-w-32 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10 outline-none",
           "data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2",
           visible ? `animate-in fade-in-0 ${zoomClass} ${slideClass}`.trim() : "animate-out fade-out-0 zoom-out-95",
+          centerScreen && "rounded-xl shadow-2xl",
           className
         )}
       >
@@ -312,8 +323,8 @@ function DropdownMenuItem({
       }}
       className={cn(
         "group/dropdown-menu-item relative flex w-full cursor-default items-center gap-1.5 rounded-md px-1.5 py-1 text-sm outline-none select-none",
-        "focus:bg-accent focus:text-accent-foreground",
-        variant === "destructive" && "text-destructive focus:bg-destructive/10 focus:text-destructive",
+        "hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
+        variant === "destructive" && "text-destructive hover:bg-destructive/10 focus:bg-destructive/10 focus:text-destructive",
         inset && "pl-7",
         className
       )}

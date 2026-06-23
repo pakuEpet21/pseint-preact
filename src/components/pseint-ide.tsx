@@ -683,7 +683,7 @@ export function PseintIDE() {
               </TooltipTrigger>
               <TooltipContent side="bottom">Más opciones</TooltipContent>
             </Tooltip>
-            <DropdownMenuContent side="bottom" className="w-48">
+            <DropdownMenuContent side="bottom" centerScreen className="w-64">
               <DropdownMenuItem onClick={openFile}>
                 <FolderOpen className="mr-2 size-4" />
                 Abrir archivo
