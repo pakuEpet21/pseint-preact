@@ -1,26 +1,26 @@
 export function formatPseint(code: string): string {
-  const lines = code.split("\n")
-  const result: string[] = []
-  let indent = 0
-  const TAB = "    "
+  const lines = code.split("\n");
+  const result: string[] = [];
+  let indent = 0;
+  const TAB = "    ";
 
   for (const rawLine of lines) {
-    const trimmedStart = rawLine.trimStart()
+    const trimmedStart = rawLine.trimStart();
 
     // Preservar líneas vacías
     if (trimmedStart === "") {
-      result.push("")
-      continue
+      result.push("");
+      continue;
     }
 
     // Comentarios completos
     if (trimmedStart.startsWith("//") || trimmedStart.startsWith("#")) {
-      result.push(TAB.repeat(indent) + trimmedStart)
-      continue
+      result.push(TAB.repeat(indent) + trimmedStart);
+      continue;
     }
 
     // Obtener línea sin comentarios inline para análisis
-    const lineForAnalysis = removeInlineComments(trimmedStart).toLowerCase()
+    const lineForAnalysis = removeInlineComments(trimmedStart).toLowerCase();
 
     // Detectar cierre de bloque (reducir indent ANTES de escribir)
     const closingKeywords = [
@@ -31,26 +31,26 @@ export function formatPseint(code: string): string {
       "finfuncion",
       "finsubproceso",
       "finsubalgoritmo",
-    ]
+    ];
     const isClosing = closingKeywords.some(
-      (kw) => lineForAnalysis.startsWith(kw + " ") || lineForAnalysis === kw
-    )
-    const isHastaQue = lineForAnalysis.startsWith("hasta que")
+      (kw) => lineForAnalysis.startsWith(kw + " ") || lineForAnalysis === kw,
+    );
+    const isHastaQue = lineForAnalysis.startsWith("hasta que");
 
     if (isClosing || isHastaQue) {
-      indent = Math.max(0, indent - 1)
+      indent = Math.max(0, indent - 1);
     }
 
     // Detectar sino / de otro modo (sin cambio de indent)
     const isMidBlock =
       lineForAnalysis.startsWith("sino") ||
-      lineForAnalysis.startsWith("de otro modo")
+      lineForAnalysis.startsWith("de otro modo");
 
     // Escribir la línea
     if (isMidBlock) {
-      result.push(TAB.repeat(Math.max(0, indent)) + trimmedStart)
+      result.push(TAB.repeat(Math.max(0, indent)) + trimmedStart);
     } else {
-      result.push(TAB.repeat(indent) + trimmedStart)
+      result.push(TAB.repeat(indent) + trimmedStart);
     }
 
     // Detectar apertura de bloque (aumentar indent DESPUÉS de escribir)
@@ -63,47 +63,47 @@ export function formatPseint(code: string): string {
       /^funcion\b/,
       /^subproceso\b/,
       /^subalgoritmo\b/,
-    ]
+    ];
     const isOpening = openingPatterns.some((pattern) =>
-      pattern.test(lineForAnalysis)
-    )
+      pattern.test(lineForAnalysis),
+    );
 
     if (isOpening) {
-      indent++
+      indent++;
     }
   }
 
-  return result.join("\n")
+  return result.join("\n");
 }
 
 function removeInlineComments(line: string): string {
-  let result = ""
-  let inString = false
-  let stringChar = ""
+  let result = "";
+  let inString = false;
+  let stringChar = "";
 
   for (let i = 0; i < line.length; i++) {
-    const ch = line[i]
+    const ch = line[i];
 
     if (!inString && (ch === '"' || ch === "'")) {
-      inString = true
-      stringChar = ch
-      result += ch
-      continue
+      inString = true;
+      stringChar = ch;
+      result += ch;
+      continue;
     }
 
     if (inString && ch === stringChar) {
-      inString = false
-      result += ch
-      continue
+      inString = false;
+      result += ch;
+      continue;
     }
 
     if (!inString) {
-      if (ch === "/" && line[i + 1] === "/") break
-      if (ch === "#") break
+      if (ch === "/" && line[i + 1] === "/") break;
+      if (ch === "#") break;
     }
 
-    result += ch
+    result += ch;
   }
 
-  return result
+  return result;
 }

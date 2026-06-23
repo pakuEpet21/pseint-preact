@@ -1,136 +1,145 @@
-import * as React from "preact/compat"
-import { forwardRef, createPortal } from "preact/compat"
-import { cn } from "@/lib/utils"
+import * as React from "preact/compat";
+import { forwardRef, createPortal } from "preact/compat";
+import { cn } from "@/lib/utils";
 
 interface DropdownMenuContextValue {
-  open: boolean
-  setOpen: (open: boolean) => void
-  triggerRef: React.RefObject<HTMLElement | null>
+  open: boolean;
+  setOpen: (open: boolean) => void;
+  triggerRef: React.RefObject<HTMLElement | null>;
 }
 
-const DropdownMenuContext = React.createContext<DropdownMenuContextValue | null>(null)
+const DropdownMenuContext =
+  React.createContext<DropdownMenuContextValue | null>(null);
 
 function useDropdownMenuContext() {
-  const ctx = React.useContext(DropdownMenuContext)
-  if (!ctx) throw new Error("DropdownMenu components must be used within DropdownMenu")
-  return ctx
+  const ctx = React.useContext(DropdownMenuContext);
+  if (!ctx)
+    throw new Error("DropdownMenu components must be used within DropdownMenu");
+  return ctx;
 }
 
 function DropdownMenu({ children }: { children: React.ReactNode }) {
-  const [open, setOpen] = React.useState(false)
-  const triggerRef = React.useRef<HTMLElement | null>(null)
+  const [open, setOpen] = React.useState(false);
+  const triggerRef = React.useRef<HTMLElement | null>(null);
 
   React.useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as Node
+      const target = e.target as Node;
       if (open && triggerRef.current && !triggerRef.current.contains(target)) {
-        const content = document.querySelector('[data-dropdown-content]')
+        const content = document.querySelector("[data-dropdown-content]");
         if (content && !content.contains(target)) {
-          setOpen(false)
+          setOpen(false);
         }
       }
-    }
+    };
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false)
-    }
-    document.addEventListener("mousedown", handleClickOutside)
-    document.addEventListener("keydown", handleEscape)
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside)
-      document.removeEventListener("keydown", handleEscape)
-    }
-  }, [open])
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [open]);
 
   return (
     <DropdownMenuContext.Provider value={{ open, setOpen, triggerRef }}>
       {children}
     </DropdownMenuContext.Provider>
-  )
+  );
 }
 
 function DropdownMenuPortal({ children }: { children: React.ReactNode }) {
-  const [mounted, setMounted] = React.useState(false)
-  React.useEffect(() => { setMounted(true) }, [])
-  if (!mounted) return null
-  return createPortal(children, document.body)
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+  if (!mounted) return null;
+  return createPortal(children, document.body);
 }
 
 interface DropdownMenuTriggerProps {
-  children: React.ReactNode
-  asChild?: boolean
-  className?: string
+  children: React.ReactNode;
+  asChild?: boolean;
+  className?: string;
 }
 
 function mergeRefs<T>(...refs: (React.Ref<T> | undefined)[]) {
   return (node: T | null) => {
     refs.forEach((ref) => {
-      if (typeof ref === "function") ref(node)
-      else if (ref && "current" in ref) (ref as React.MutableRefObject<T | null>).current = node
-    })
-  }
+      if (typeof ref === "function") ref(node);
+      else if (ref && "current" in ref)
+        (ref as React.MutableRefObject<T | null>).current = node;
+    });
+  };
 }
 
-const DropdownMenuTrigger = forwardRef<HTMLElement, DropdownMenuTriggerProps>(function DropdownMenuTrigger(
-  { children, asChild, className, ...rest },
-  forwardedRef
-) {
-  const { open, setOpen, triggerRef } = useDropdownMenuContext()
+const DropdownMenuTrigger = forwardRef<HTMLElement, DropdownMenuTriggerProps>(
+  function DropdownMenuTrigger(
+    { children, asChild, className, ...rest },
+    forwardedRef,
+  ) {
+    const { open, setOpen, triggerRef } = useDropdownMenuContext();
 
-  const handleClick = (e: React.MouseEvent<HTMLElement>) => {
-    e.stopPropagation()
-    setOpen(!open)
-    ;(rest as any).onClick?.(e)
-  }
+    const handleClick = (e: React.MouseEvent<HTMLElement>) => {
+      e.stopPropagation();
+      setOpen(!open);
+      (rest as any).onClick?.(e);
+    };
 
-  const setRefs = mergeRefs(forwardedRef, (node: HTMLElement | null) => { triggerRef.current = node })
+    const setRefs = mergeRefs(forwardedRef, (node: HTMLElement | null) => {
+      triggerRef.current = node;
+    });
 
-  if (asChild && React.isValidElement(children)) {
-    const child = children as React.ReactElement<{
-      ref?: React.Ref<HTMLElement>
-      onClick?: (e: React.MouseEvent<HTMLElement>) => void
-      onMouseEnter?: (e: React.MouseEvent<HTMLElement>) => void
-      onMouseLeave?: (e: React.MouseEvent<HTMLElement>) => void
-    }>
-    return React.cloneElement(child, {
-      ref: setRefs,
-      onClick: (e: React.MouseEvent<HTMLElement>) => {
-        handleClick(e)
-        child.props.onClick?.(e)
-      },
-      onMouseEnter: (e: React.MouseEvent<HTMLElement>) => {
-        ;(rest as any).onMouseEnter?.(e)
-        child.props.onMouseEnter?.(e)
-      },
-      onMouseLeave: (e: React.MouseEvent<HTMLElement>) => {
-        ;(rest as any).onMouseLeave?.(e)
-        child.props.onMouseLeave?.(e)
-      },
-    } as React.ComponentPropsWithoutRef<"div">)
-  }
+    if (asChild && React.isValidElement(children)) {
+      const child = children as React.ReactElement<{
+        ref?: React.Ref<HTMLElement>;
+        onClick?: (e: React.MouseEvent<HTMLElement>) => void;
+        onMouseEnter?: (e: React.MouseEvent<HTMLElement>) => void;
+        onMouseLeave?: (e: React.MouseEvent<HTMLElement>) => void;
+      }>;
+      return React.cloneElement(child, {
+        ref: setRefs,
+        onClick: (e: React.MouseEvent<HTMLElement>) => {
+          handleClick(e);
+          child.props.onClick?.(e);
+        },
+        onMouseEnter: (e: React.MouseEvent<HTMLElement>) => {
+          (rest as any).onMouseEnter?.(e);
+          child.props.onMouseEnter?.(e);
+        },
+        onMouseLeave: (e: React.MouseEvent<HTMLElement>) => {
+          (rest as any).onMouseLeave?.(e);
+          child.props.onMouseLeave?.(e);
+        },
+      } as React.ComponentPropsWithoutRef<"div">);
+    }
 
-  return (
-    <button
-      ref={setRefs as any}
-      type="button"
-      onClick={handleClick}
-      onMouseEnter={(rest as any).onMouseEnter}
-      onMouseLeave={(rest as any).onMouseLeave}
-      className={className}
-    >
-      {children}
-    </button>
-  )
-})
+    return (
+      <button
+        ref={setRefs as any}
+        type="button"
+        onClick={handleClick}
+        onMouseEnter={(rest as any).onMouseEnter}
+        onMouseLeave={(rest as any).onMouseLeave}
+        className={className}
+      >
+        {children}
+      </button>
+    );
+  },
+);
 
 interface DropdownMenuContentProps {
-  children?: React.ReactNode
-  align?: "start" | "center" | "end"
-  alignOffset?: number
-  side?: "top" | "bottom" | "left" | "right"
-  sideOffset?: number
-  className?: string
-  centerScreen?: boolean
-  modalClassName?: string
+  children?: React.ReactNode;
+  align?: "start" | "center" | "end";
+  alignOffset?: number;
+  side?: "top" | "bottom" | "left" | "right";
+  sideOffset?: number;
+  className?: string;
+  centerScreen?: boolean;
+  modalClassName?: string;
 }
 
 function DropdownMenuContent({
@@ -142,103 +151,124 @@ function DropdownMenuContent({
   className,
   centerScreen = false,
 }: DropdownMenuContentProps) {
-  const { open, setOpen, triggerRef } = useDropdownMenuContext()
-  const [position, setPosition] = React.useState({ top: 0, left: 0, transform: "" })
-  const [visible, setVisible] = React.useState(false)
+  const { open, setOpen, triggerRef } = useDropdownMenuContext();
+  const [position, setPosition] = React.useState({
+    top: 0,
+    left: 0,
+    transform: "",
+  });
+  const [visible, setVisible] = React.useState(false);
 
   React.useEffect(() => {
     if (!open) {
-      setVisible(false)
-      return
+      setVisible(false);
+      return;
     }
 
     if (centerScreen) {
-      setPosition({ top: 50, left: 50, transform: "translate(-50%, -50%)" })
-      requestAnimationFrame(() => setVisible(true))
-      return
+      setPosition({ top: 50, left: 50, transform: "translate(-50%, -50%)" });
+      requestAnimationFrame(() => setVisible(true));
+      return;
     }
 
     if (triggerRef.current) {
-      const rect = triggerRef.current.getBoundingClientRect()
-      let top = 0, left = 0
-      let transform = ""
+      const rect = triggerRef.current.getBoundingClientRect();
+      let top = 0,
+        left = 0;
+      let transform = "";
 
       if (side === "bottom") {
-        top = rect.bottom + sideOffset
+        top = rect.bottom + sideOffset;
         if (align === "start") {
-          left = rect.left
-          transform = ""
+          left = rect.left;
+          transform = "";
         } else if (align === "center") {
-          left = rect.left + rect.width / 2
-          transform = "translateX(-50%)"
+          left = rect.left + rect.width / 2;
+          transform = "translateX(-50%)";
         } else if (align === "end") {
-          left = rect.right
-          transform = "translateX(-100%)"
+          left = rect.right;
+          transform = "translateX(-100%)";
         }
       } else if (side === "top") {
-        top = rect.top - sideOffset
+        top = rect.top - sideOffset;
         if (align === "start") {
-          left = rect.left
-          transform = "translateY(-100%)"
+          left = rect.left;
+          transform = "translateY(-100%)";
         } else if (align === "center") {
-          left = rect.left + rect.width / 2
-          transform = "translateX(-50%) translateY(-100%)"
+          left = rect.left + rect.width / 2;
+          transform = "translateX(-50%) translateY(-100%)";
         } else if (align === "end") {
-          left = rect.right
-          transform = "translateX(-100%) translateY(-100%)"
+          left = rect.right;
+          transform = "translateX(-100%) translateY(-100%)";
         }
       } else if (side === "left") {
-        left = rect.left - sideOffset
+        left = rect.left - sideOffset;
         if (align === "start") {
-          top = rect.top
-          transform = "translateX(-100%)"
+          top = rect.top;
+          transform = "translateX(-100%)";
         } else if (align === "center") {
-          top = rect.top + rect.height / 2
-          transform = "translateX(-100%) translateY(-50%)"
+          top = rect.top + rect.height / 2;
+          transform = "translateX(-100%) translateY(-50%)";
         } else if (align === "end") {
-          top = rect.bottom
-          transform = "translateX(-100%) translateY(-100%)"
+          top = rect.bottom;
+          transform = "translateX(-100%) translateY(-100%)";
         }
       } else if (side === "right") {
-        left = rect.right + sideOffset
+        left = rect.right + sideOffset;
         if (align === "start") {
-          top = rect.top
-          transform = ""
+          top = rect.top;
+          transform = "";
         } else if (align === "center") {
-          top = rect.top + rect.height / 2
-          transform = "translateY(-50%)"
+          top = rect.top + rect.height / 2;
+          transform = "translateY(-50%)";
         } else if (align === "end") {
-          top = rect.bottom
-          transform = "translateY(-100%)"
+          top = rect.bottom;
+          transform = "translateY(-100%)";
         }
       }
 
       if (side === "bottom" || side === "top") {
-        if (align === "start") left -= alignOffset
-        else if (align === "end") left += alignOffset
+        if (align === "start") left -= alignOffset;
+        else if (align === "end") left += alignOffset;
       } else {
-        if (align === "start") top -= alignOffset
-        else if (align === "end") top += alignOffset
+        if (align === "start") top -= alignOffset;
+        else if (align === "end") top += alignOffset;
       }
 
-      setPosition({ top, left, transform })
-      requestAnimationFrame(() => setVisible(true))
+      setPosition({ top, left, transform });
+      requestAnimationFrame(() => setVisible(true));
     }
-  }, [open, triggerRef, side, sideOffset, align, alignOffset, centerScreen])
+  }, [open, triggerRef, side, sideOffset, align, alignOffset, centerScreen]);
 
-  if (!open) return null
+  if (!open) return null;
 
-  const slideClass = centerScreen ? ""
-    : side === "bottom" ? "slide-in-from-top-2"
-    : side === "top" ? "slide-in-from-bottom-2"
-    : side === "left" ? "slide-in-from-right-2"
-    : "slide-in-from-left-2"
+  const slideClass = centerScreen
+    ? ""
+    : side === "bottom"
+      ? "slide-in-from-top-2"
+      : side === "top"
+        ? "slide-in-from-bottom-2"
+        : side === "left"
+          ? "slide-in-from-right-2"
+          : "slide-in-from-left-2";
 
-  const zoomClass = centerScreen ? "" : "zoom-in-95"
+  const zoomClass = centerScreen ? "" : "zoom-in-95";
 
   const style: React.CSSProperties = centerScreen
-    ? { position: "fixed", top: `${position.top}%`, left: `${position.left}%`, transform: position.transform, zIndex: 50 }
-    : { position: "fixed", top: position.top, left: position.left, transform: position.transform, zIndex: 50 }
+    ? {
+        position: "fixed",
+        top: `${position.top}%`,
+        left: `${position.left}%`,
+        transform: position.transform,
+        zIndex: 50,
+      }
+    : {
+        position: "fixed",
+        top: position.top,
+        left: position.left,
+        transform: position.transform,
+        zIndex: 50,
+      };
 
   return (
     <DropdownMenuPortal>
@@ -246,7 +276,7 @@ function DropdownMenuContent({
         <div
           className={cn(
             "fixed inset-0 z-40 bg-black/50 backdrop-blur-sm",
-            visible ? "animate-in fade-in-0" : "animate-out fade-out-0"
+            visible ? "animate-in fade-in-0" : "animate-out fade-out-0",
           )}
           onClick={() => setOpen(false)}
         />
@@ -257,19 +287,21 @@ function DropdownMenuContent({
         className={cn(
           "z-50 max-h-(--available-height) min-w-32 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10 outline-none",
           "data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2",
-          visible ? `animate-in fade-in-0 ${zoomClass} ${slideClass}`.trim() : "animate-out fade-out-0 zoom-out-95",
+          visible
+            ? `animate-in fade-in-0 ${zoomClass} ${slideClass}`.trim()
+            : "animate-out fade-out-0 zoom-out-95",
           centerScreen && "rounded-xl shadow-2xl",
-          className
+          className,
         )}
       >
         {children}
       </div>
     </DropdownMenuPortal>
-  )
+  );
 }
 
 function DropdownMenuGroup({ children }: { children: React.ReactNode }) {
-  return <>{children}</>
+  return <>{children}</>;
 }
 
 function DropdownMenuLabel({
@@ -277,31 +309,31 @@ function DropdownMenuLabel({
   inset,
   children,
 }: {
-  className?: string
-  inset?: boolean
-  children: React.ReactNode
+  className?: string;
+  inset?: boolean;
+  children: React.ReactNode;
 }) {
   return (
     <div
       className={cn(
         "px-1.5 py-1 text-xs font-medium text-muted-foreground",
         inset && "pl-7",
-        className
+        className,
       )}
     >
       {children}
     </div>
-  )
+  );
 }
 
 interface DropdownMenuItemProps {
-  children?: React.ReactNode
-  onClick?: () => void
-  className?: string
-  variant?: "default" | "destructive"
-  inset?: boolean
+  children?: React.ReactNode;
+  onClick?: () => void;
+  className?: string;
+  variant?: "default" | "destructive";
+  inset?: boolean;
   // When false, clicking the item keeps the menu open.
-  closeOnSelect?: boolean
+  closeOnSelect?: boolean;
 }
 
 function DropdownMenuItem({
@@ -312,30 +344,31 @@ function DropdownMenuItem({
   inset,
   closeOnSelect = true,
 }: DropdownMenuItemProps) {
-  const { setOpen } = useDropdownMenuContext()
+  const { setOpen } = useDropdownMenuContext();
   return (
     <button
       type="button"
       onClick={(e) => {
-        if (closeOnSelect === false) e.stopPropagation()
-        onClick?.()
-        if (closeOnSelect !== false) setOpen(false)
+        if (closeOnSelect === false) e.stopPropagation();
+        onClick?.();
+        if (closeOnSelect !== false) setOpen(false);
       }}
       className={cn(
         "group/dropdown-menu-item relative flex w-full cursor-default items-center gap-1.5 rounded-md px-1.5 py-1 text-sm outline-none select-none",
         "hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
-        variant === "destructive" && "text-destructive hover:bg-destructive/10 focus:bg-destructive/10 focus:text-destructive",
+        variant === "destructive" &&
+          "text-destructive hover:bg-destructive/10 focus:bg-destructive/10 focus:text-destructive",
         inset && "pl-7",
-        className
+        className,
       )}
     >
       {children}
     </button>
-  )
+  );
 }
 
 function DropdownMenuSeparator({ className }: { className?: string }) {
-  return <div className={cn("-mx-1 my-1 h-px bg-border", className)} />
+  return <div className={cn("-mx-1 my-1 h-px bg-border", className)} />;
 }
 
 function DropdownMenuCheckboxItem({
@@ -344,10 +377,10 @@ function DropdownMenuCheckboxItem({
   checked,
   onCheckedChange,
 }: {
-  className?: string
-  children?: React.ReactNode
-  checked?: boolean
-  onCheckedChange?: (checked: boolean) => void
+  className?: string;
+  children?: React.ReactNode;
+  checked?: boolean;
+  onCheckedChange?: (checked: boolean) => void;
 }) {
   return (
     <button
@@ -357,23 +390,29 @@ function DropdownMenuCheckboxItem({
       onClick={() => onCheckedChange?.(!checked)}
       className={cn(
         "relative flex w-full cursor-default items-center gap-1.5 rounded-md py-1 pr-8 pl-1.5 text-sm outline-none select-none focus:bg-accent focus:text-accent-foreground",
-        className
+        className,
       )}
     >
       <span className="pointer-events-none absolute right-2 flex items-center justify-center">
         {checked && (
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M13.5 4.5L6 12L2.5 8.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path
+              d="M13.5 4.5L6 12L2.5 8.5"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
         )}
       </span>
       {children}
     </button>
-  )
+  );
 }
 
 function DropdownMenuRadioGroup({ children }: { children: React.ReactNode }) {
-  return <>{children}</>
+  return <>{children}</>;
 }
 
 function DropdownMenuRadioItem({
@@ -382,10 +421,10 @@ function DropdownMenuRadioItem({
   checked,
   onSelect,
 }: {
-  className?: string
-  children?: React.ReactNode
-  checked?: boolean
-  onSelect?: () => void
+  className?: string;
+  children?: React.ReactNode;
+  checked?: boolean;
+  onSelect?: () => void;
 }) {
   return (
     <button
@@ -395,23 +434,23 @@ function DropdownMenuRadioItem({
       onClick={onSelect}
       className={cn(
         "relative flex w-full cursor-default items-center gap-1.5 rounded-md py-1 pr-8 pl-1.5 text-sm outline-none select-none focus:bg-accent focus:text-accent-foreground",
-        className
+        className,
       )}
     >
       <span className="pointer-events-none absolute right-2 flex items-center justify-center">
         {checked && (
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <circle cx="8" cy="8" r="4" fill="currentColor"/>
+            <circle cx="8" cy="8" r="4" fill="currentColor" />
           </svg>
         )}
       </span>
       {children}
     </button>
-  )
+  );
 }
 
 function DropdownMenuSub({ children }: { children: React.ReactNode }) {
-  return <>{children}</>
+  return <>{children}</>;
 }
 
 function DropdownMenuSubTrigger({
@@ -419,9 +458,9 @@ function DropdownMenuSubTrigger({
   inset,
   children,
 }: {
-  className?: string
-  inset?: boolean
-  children: React.ReactNode
+  className?: string;
+  inset?: boolean;
+  children: React.ReactNode;
 }) {
   return (
     <button
@@ -429,15 +468,27 @@ function DropdownMenuSubTrigger({
       className={cn(
         "flex w-full cursor-default items-center gap-1.5 rounded-md px-1.5 py-1 text-sm outline-none select-none focus:bg-accent focus:text-accent-foreground",
         inset && "pl-7",
-        className
+        className,
       )}
     >
       {children}
-      <svg className="ml-auto" width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <path d="M6 4L10 8L6 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <svg
+        className="ml-auto"
+        width="16"
+        height="16"
+        viewBox="0 0 16 16"
+        fill="none"
+      >
+        <path
+          d="M6 4L10 8L6 12"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
       </svg>
     </button>
-  )
+  );
 }
 
 function DropdownMenuSubContent({
@@ -448,12 +499,12 @@ function DropdownMenuSubContent({
   className,
   children,
 }: {
-  align?: "start" | "center" | "end"
-  alignOffset?: number
-  side?: "top" | "bottom" | "left" | "right"
-  sideOffset?: number
-  className?: string
-  children: React.ReactNode
+  align?: "start" | "center" | "end";
+  alignOffset?: number;
+  side?: "top" | "bottom" | "left" | "right";
+  sideOffset?: number;
+  className?: string;
+  children: React.ReactNode;
 }) {
   return (
     <DropdownMenuContent
@@ -461,11 +512,14 @@ function DropdownMenuSubContent({
       alignOffset={alignOffset}
       side={side}
       sideOffset={sideOffset}
-      className={cn("w-auto min-w-[96px] rounded-lg bg-popover p-1 text-popover-foreground shadow-lg ring-1 ring-foreground/10", className)}
+      className={cn(
+        "w-auto min-w-[96px] rounded-lg bg-popover p-1 text-popover-foreground shadow-lg ring-1 ring-foreground/10",
+        className,
+      )}
     >
       {children}
     </DropdownMenuContent>
-  )
+  );
 }
 
 export {
@@ -483,4 +537,4 @@ export {
   DropdownMenuSub,
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
-}
+};

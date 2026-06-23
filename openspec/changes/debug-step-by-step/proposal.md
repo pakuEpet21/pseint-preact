@@ -7,6 +7,7 @@ Add a manual step/debug execution mode so learners can run a PSeInt program one 
 ## Scope
 
 ### In Scope
+
 - Debug toggle next to the existing "Ejecutar" button.
 - Interpreter support for pause-before-statement execution via a debug controller.
 - Emission of current line and variable snapshot after each step.
@@ -15,6 +16,7 @@ Add a manual step/debug execution mode so learners can run a PSeInt program one 
 - Editing code while debugging ends the debug session.
 
 ### Out of Scope
+
 - Breakpoints, conditional steps, or watch expressions.
 - Call-stack / step-into / step-out for functions.
 - Persisting debug state across page reloads.
@@ -22,9 +24,11 @@ Add a manual step/debug execution mode so learners can run a PSeInt program one 
 ## Capabilities
 
 ### New Capabilities
+
 - `debug-execution`: step-through run mode, pause control, per-step variable inspection, and debug UI.
 
 ### Modified Capabilities
+
 - None.
 
 ## Approach
@@ -33,19 +37,19 @@ Add a `debug?: boolean` flag and an `onStep?(line, vars): Promise<void>` callbac
 
 ## Affected Areas
 
-| Area | Impact | Description |
-|------|--------|-------------|
-| `src/lib/pseint/interpreter.ts` | Modified | Adds debug pause hook and per-step variable emission. |
-| `src/components/pseint-ide.tsx` | Modified | Adds debug state, debug button, debug toolbar, and edit detection. |
-| `src/components/variable-inspector.tsx` | Consumes data | Reuses existing variable table in debug view. |
+| Area                                    | Impact        | Description                                                        |
+| --------------------------------------- | ------------- | ------------------------------------------------------------------ |
+| `src/lib/pseint/interpreter.ts`         | Modified      | Adds debug pause hook and per-step variable emission.              |
+| `src/components/pseint-ide.tsx`         | Modified      | Adds debug state, debug button, debug toolbar, and edit detection. |
+| `src/components/variable-inspector.tsx` | Consumes data | Reuses existing variable table in debug view.                      |
 
 ## Risks
 
-| Risk | Likelihood | Mitigation |
-|------|------------|------------|
-| Async pause logic complicates control flow (loops, input) | Med | Keep resolver in the IDE; interpreter only awaits callback; verify with small sample programs. |
-| Highlight/scroll to current line couples IDE to editor internals | Low | Use existing editor highlight props; add a `highlightLine` prop if needed. |
-| Stepping into infinite loops remains possible | Low | `tick()` still increments `maxSteps`; abort signal still works. |
+| Risk                                                             | Likelihood | Mitigation                                                                                     |
+| ---------------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------- |
+| Async pause logic complicates control flow (loops, input)        | Med        | Keep resolver in the IDE; interpreter only awaits callback; verify with small sample programs. |
+| Highlight/scroll to current line couples IDE to editor internals | Low        | Use existing editor highlight props; add a `highlightLine` prop if needed.                     |
+| Stepping into infinite loops remains possible                    | Low        | `tick()` still increments `maxSteps`; abort signal still works.                                |
 
 ## Rollback Plan
 

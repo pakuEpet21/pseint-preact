@@ -1,13 +1,13 @@
 export interface Snippet {
-  label: string
-  description: string
-  code: string
+  label: string;
+  description: string;
+  code: string;
 }
 
 export interface SnippetCategory {
-  name: string
-  icon: string // lucide icon name
-  snippets: Snippet[]
+  name: string;
+  icon: string; // lucide icon name
+  snippets: Snippet[];
 }
 
 export const SNIPPET_CATEGORIES: SnippetCategory[] = [
@@ -208,12 +208,12 @@ export const SNIPPET_CATEGORIES: SnippetCategory[] = [
       },
     ],
   },
-]
+];
 
 export interface Example {
-  name: string
-  fileName: string
-  code: string
+  name: string;
+  fileName: string;
+  code: string;
 }
 
 export const EXAMPLES: Example[] = [
@@ -301,8 +301,8 @@ FinAlgoritmo`,
 	Escribir "El promedio es: ", prom
 FinAlgoritmo`,
   },
-]
+];
 
 export const STARTER_CODE = `Algoritmo NombreDelAlgoritmo
 	
-FinAlgoritmo`
+FinAlgoritmo`;

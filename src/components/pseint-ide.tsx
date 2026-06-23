@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from "preact/hooks"
-import type { MouseEvent, ChangeEvent, CSSProperties } from "preact/compat"
-import { flushSync } from "react-dom"
+import { useCallback, useEffect, useRef, useState } from "preact/hooks";
+import type { MouseEvent, ChangeEvent, CSSProperties } from "preact/compat";
+import { flushSync } from "react-dom";
 
 import {
   Play,
@@ -25,325 +25,334 @@ import {
   Trash,
   PanelBottomOpen,
   PanelTopOpen,
-} from "lucide-react"
-import { CodeEditor, type CodeEditorHandle } from "@/components/code-editor"
-import { SnippetPanel } from "@/components/snippet-panel"
-import { ConsolePanel } from "@/components/console-panel"
-import { VariableInspector } from "@/components/variable-inspector"
-import { FlowchartPanel } from "@/components/flowchart-panel"
-import { SettingsDialog } from "@/components/settings-dialog"
+} from "lucide-react";
+import { CodeEditor, type CodeEditorHandle } from "@/components/code-editor";
+import { SnippetPanel } from "@/components/snippet-panel";
+import { ConsolePanel } from "@/components/console-panel";
+import { VariableInspector } from "@/components/variable-inspector";
+import { FlowchartPanel } from "@/components/flowchart-panel";
+import { SettingsDialog } from "@/components/settings-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
+} from "@/components/ui/tooltip";
 import {
   runPseint,
   type ConsoleLine,
   type VarSnapshot,
-} from "@/lib/pseint/interpreter"
-import { formatPseint } from "@/lib/pseint/format"
-import { STARTER_CODE } from "@/lib/pseint/snippets"
-import {
-  loadWorkspace,
-  saveWorkspace,
-} from "@/lib/pseint/storage"
+} from "@/lib/pseint/interpreter";
+import { formatPseint } from "@/lib/pseint/format";
+import { STARTER_CODE } from "@/lib/pseint/snippets";
+import { loadWorkspace, saveWorkspace } from "@/lib/pseint/storage";
 
 interface FileTab {
-  id: string
-  name: string
-  content: string
+  id: string;
+  name: string;
+  content: string;
 }
 
-let idCounter = 1
-const newId = () => `f${idCounter++}`
+let idCounter = 1;
+const newId = () => `f${idCounter++}`;
 const stripFileExtension = (name: string) =>
-  name.replace(/\.(psc|pseint|txt)$/i, "")
+  name.replace(/\.(psc|pseint|txt)$/i, "");
 
-type SaveState = "idle" | "saving" | "saved"
+type SaveState = "idle" | "saving" | "saved";
 
 interface Snapshot {
-  content: string
-  cursor: number
+  content: string;
+  cursor: number;
 }
 
 interface HistoryEntry {
-  past: Snapshot[]
-  future: Snapshot[]
+  past: Snapshot[];
+  future: Snapshot[];
 }
 
 interface DebugController {
-  active: boolean
-  continueMode: boolean
-  resume?: () => void
+  active: boolean;
+  continueMode: boolean;
+  resume?: () => void;
 }
 
 export function PseintIDE() {
   const [tabs, setTabs] = useState<FileTab[]>([
     { id: newId(), name: "ejemplo.psc", content: STARTER_CODE },
-  ])
-  const [activeId, setActiveId] = useState(tabs[0].id)
-  const [lines, setLines] = useState<ConsoleLine[]>([])
-  const [vars, setVars] = useState<VarSnapshot[]>([])
-  const [running, setRunning] = useState(false)
-  const [waitingForInput, setWaitingForInput] = useState(false)
-  const [saveState, setSaveState] = useState<SaveState>("idle")
+  ]);
+  const [activeId, setActiveId] = useState(tabs[0].id);
+  const [lines, setLines] = useState<ConsoleLine[]>([]);
+  const [vars, setVars] = useState<VarSnapshot[]>([]);
+  const [running, setRunning] = useState(false);
+  const [waitingForInput, setWaitingForInput] = useState(false);
+  const [saveState, setSaveState] = useState<SaveState>("idle");
   // Width of the right (console) panel as a percentage of the split, desktop only.
-  const [consolePct, setConsolePct] = useState(38)
+  const [consolePct, setConsolePct] = useState(38);
   // Toggle the operations (snippets) panel between editor and console.
-  const [showOps, setShowOps] = useState(false)
+  const [showOps, setShowOps] = useState(false);
   // Right panel tab: console or flowchart.
-  const [rightTab, setRightTab] = useState<"console" | "flowchart">("console")
+  const [rightTab, setRightTab] = useState<"console" | "flowchart">("console");
   // Visual theme: "light", "dark" (default) or "dracula".
-  const [theme, setTheme] = useState<"light" | "dark" | "dracula">("dracula")
-  const [fontSize, setFontSize] = useState(14)
+  const [theme, setTheme] = useState<"light" | "dark" | "dracula">("dracula");
+  const [fontSize, setFontSize] = useState(14);
   // Strict mode: requires Algoritmo/FinAlgoritmo and declared variables.
-  const [strictMode, setStrictMode] = useState(true)
+  const [strictMode, setStrictMode] = useState(true);
   // Strong typing: infers type from first assignment and validates on Leer.
-  const [strongTyping, setStrongTyping] = useState(true)
+  const [strongTyping, setStrongTyping] = useState(true);
   // Compact console mode: single line per entry, less spacing.
-  const [consoleSimple, setConsoleSimple] = useState(false)
+  const [consoleSimple, setConsoleSimple] = useState(false);
   // Font family used for console output.
-  const [consoleFont, setConsoleFont] = useState("ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace")
+  const [consoleFont, setConsoleFont] = useState(
+    "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace",
+  );
   // Font family used for the code editor.
-  const [editorFont, setEditorFont] = useState("ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace")
+  const [editorFont, setEditorFont] = useState(
+    "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace",
+  );
   // Font size used for console output.
-  const [consoleFontSize, setConsoleFontSize] = useState(14)
+  const [consoleFontSize, setConsoleFontSize] = useState(14);
   // Settings modal visibility.
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  const [tabPendingClose, setTabPendingClose] = useState<FileTab | null>(null)
-  const [editingTabId, setEditingTabId] = useState<string | null>(null)
-  const [editingTabName, setEditingTabName] = useState("")
-  const [errorLines, setErrorLines] = useState<number[]>([])
-  const [hoveredVariable, setHoveredVariable] = useState<{ name: string; line?: number } | null>(null)
-  const [debugActive, setDebugActive] = useState(false)
-  const [debugPaused, setDebugPaused] = useState(false)
-  const [debugLine, setDebugLine] = useState<number | null>(null)
-  const [debugVars, setDebugVars] = useState<VarSnapshot[]>([])
-  const draggingRef = useRef(false)
-  const splitRef = useRef<HTMLDivElement>(null)
-  const inputResolverRef = useRef<((v: string) => void) | null>(null)
-  const abortRef = useRef<{ aborted: boolean }>({ aborted: false })
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const hydratedRef = useRef(false)
-  const editorRef = useRef<CodeEditorHandle>(null)
-  const renameInputRef = useRef<HTMLInputElement>(null)
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [tabPendingClose, setTabPendingClose] = useState<FileTab | null>(null);
+  const [editingTabId, setEditingTabId] = useState<string | null>(null);
+  const [editingTabName, setEditingTabName] = useState("");
+  const [errorLines, setErrorLines] = useState<number[]>([]);
+  const [hoveredVariable, setHoveredVariable] = useState<{
+    name: string;
+    line?: number;
+  } | null>(null);
+  const [debugActive, setDebugActive] = useState(false);
+  const [debugPaused, setDebugPaused] = useState(false);
+  const [debugLine, setDebugLine] = useState<number | null>(null);
+  const [debugVars, setDebugVars] = useState<VarSnapshot[]>([]);
+  const draggingRef = useRef(false);
+  const splitRef = useRef<HTMLDivElement>(null);
+  const inputResolverRef = useRef<((v: string) => void) | null>(null);
+  const abortRef = useRef<{ aborted: boolean }>({ aborted: false });
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hydratedRef = useRef(false);
+  const editorRef = useRef<CodeEditorHandle>(null);
+  const renameInputRef = useRef<HTMLInputElement>(null);
   const debugControllerRef = useRef<DebugController>({
     active: false,
     continueMode: false,
-  })
+  });
 
   // History (undo/redo) per tab
-  const historiesRef = useRef<Record<string, HistoryEntry>>({})
-  const [, setHistoryVersion] = useState(0)
-  const prevStateRef = useRef<Record<string, Snapshot>>({})
-  const prevActiveIdRef = useRef(activeId)
-  const snapshotTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const isUndoingRef = useRef(false)
+  const historiesRef = useRef<Record<string, HistoryEntry>>({});
+  const [, setHistoryVersion] = useState(0);
+  const prevStateRef = useRef<Record<string, Snapshot>>({});
+  const prevActiveIdRef = useRef(activeId);
+  const snapshotTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isUndoingRef = useRef(false);
 
-  const active = tabs.find((t) => t.id === activeId) ?? tabs[0]
+  const active = tabs.find((t) => t.id === activeId) ?? tabs[0];
 
   // Load saved theme, font size and strict mode on mount.
   useEffect(() => {
-    const savedTheme = localStorage.getItem("pseint:theme")
-    if (savedTheme === "light" || savedTheme === "dark" || savedTheme === "dracula") setTheme(savedTheme)
-    const savedFont = localStorage.getItem("pseint:fontSize")
+    const savedTheme = localStorage.getItem("pseint:theme");
+    if (
+      savedTheme === "light" ||
+      savedTheme === "dark" ||
+      savedTheme === "dracula"
+    )
+      setTheme(savedTheme);
+    const savedFont = localStorage.getItem("pseint:fontSize");
     if (savedFont) {
-      const n = Number.parseInt(savedFont, 10)
-      if (!Number.isNaN(n) && n >= 10 && n <= 24) setFontSize(n)
+      const n = Number.parseInt(savedFont, 10);
+      if (!Number.isNaN(n) && n >= 10 && n <= 24) setFontSize(n);
     }
-    const savedStrict = localStorage.getItem("pseint:strictMode")
-    if (savedStrict) setStrictMode(savedStrict === "true")
-    const savedStrongTyping = localStorage.getItem("pseint:strongTyping")
-    if (savedStrongTyping) setStrongTyping(savedStrongTyping === "true")
-    const savedConsoleSimple = localStorage.getItem("pseint:consoleSimple")
-    if (savedConsoleSimple) setConsoleSimple(savedConsoleSimple === "true")
-    const savedConsoleFont = localStorage.getItem("pseint:consoleFont")
-    if (savedConsoleFont) setConsoleFont(savedConsoleFont)
-    const savedEditorFont = localStorage.getItem("pseint:editorFont")
-    if (savedEditorFont) setEditorFont(savedEditorFont)
-    const savedConsoleFontSize = localStorage.getItem("pseint:consoleFontSize")
+    const savedStrict = localStorage.getItem("pseint:strictMode");
+    if (savedStrict) setStrictMode(savedStrict === "true");
+    const savedStrongTyping = localStorage.getItem("pseint:strongTyping");
+    if (savedStrongTyping) setStrongTyping(savedStrongTyping === "true");
+    const savedConsoleSimple = localStorage.getItem("pseint:consoleSimple");
+    if (savedConsoleSimple) setConsoleSimple(savedConsoleSimple === "true");
+    const savedConsoleFont = localStorage.getItem("pseint:consoleFont");
+    if (savedConsoleFont) setConsoleFont(savedConsoleFont);
+    const savedEditorFont = localStorage.getItem("pseint:editorFont");
+    if (savedEditorFont) setEditorFont(savedEditorFont);
+    const savedConsoleFontSize = localStorage.getItem("pseint:consoleFontSize");
     if (savedConsoleFontSize) {
-      const n = Number.parseInt(savedConsoleFontSize, 10)
-      if (!Number.isNaN(n) && n >= 10 && n <= 24) setConsoleFontSize(n)
+      const n = Number.parseInt(savedConsoleFontSize, 10);
+      if (!Number.isNaN(n) && n >= 10 && n <= 24) setConsoleFontSize(n);
     }
-  }, [])
+  }, []);
 
   // Apply the theme class to <html> and persist it.
   useEffect(() => {
-    const root = document.documentElement
-    root.classList.remove("dark", "dracula")
-    if (theme !== "light") root.classList.add(theme)
-    localStorage.setItem("pseint:theme", theme)
-  }, [theme])
+    const root = document.documentElement;
+    root.classList.remove("dark", "dracula");
+    if (theme !== "light") root.classList.add(theme);
+    localStorage.setItem("pseint:theme", theme);
+  }, [theme]);
 
   // Persist font size.
   useEffect(() => {
-    localStorage.setItem("pseint:fontSize", String(fontSize))
-  }, [fontSize])
+    localStorage.setItem("pseint:fontSize", String(fontSize));
+  }, [fontSize]);
 
   // Persist strict mode.
   useEffect(() => {
-    localStorage.setItem("pseint:strictMode", String(strictMode))
-  }, [strictMode])
+    localStorage.setItem("pseint:strictMode", String(strictMode));
+  }, [strictMode]);
 
   // Persist strong typing mode.
   useEffect(() => {
-    localStorage.setItem("pseint:strongTyping", String(strongTyping))
-  }, [strongTyping])
+    localStorage.setItem("pseint:strongTyping", String(strongTyping));
+  }, [strongTyping]);
 
   // Persist console simple mode.
   useEffect(() => {
-    localStorage.setItem("pseint:consoleSimple", String(consoleSimple))
-  }, [consoleSimple])
+    localStorage.setItem("pseint:consoleSimple", String(consoleSimple));
+  }, [consoleSimple]);
 
   // Persist console font family.
   useEffect(() => {
-    localStorage.setItem("pseint:consoleFont", consoleFont)
-  }, [consoleFont])
+    localStorage.setItem("pseint:consoleFont", consoleFont);
+  }, [consoleFont]);
 
   // Persist editor font family.
   useEffect(() => {
-    localStorage.setItem("pseint:editorFont", editorFont)
-  }, [editorFont])
+    localStorage.setItem("pseint:editorFont", editorFont);
+  }, [editorFont]);
 
   // Persist console font size.
   useEffect(() => {
-    localStorage.setItem("pseint:consoleFontSize", String(consoleFontSize))
-  }, [consoleFontSize])
+    localStorage.setItem("pseint:consoleFontSize", String(consoleFontSize));
+  }, [consoleFontSize]);
 
   useEffect(() => {
-    if (!editingTabId || !renameInputRef.current) return
-    renameInputRef.current.focus()
-    renameInputRef.current.select()
-  }, [editingTabId])
+    if (!editingTabId || !renameInputRef.current) return;
+    renameInputRef.current.focus();
+    renameInputRef.current.select();
+  }, [editingTabId]);
 
   // Restore workspace from localStorage on first mount
   useEffect(() => {
-    const saved = loadWorkspace()
+    const saved = loadWorkspace();
     if (saved && saved.tabs.length) {
       // ensure id counter does not collide with restored ids
       saved.tabs.forEach((t) => {
-        const n = Number.parseInt(t.id.replace(/\D/g, ""), 10)
-        if (!Number.isNaN(n) && n >= idCounter) idCounter = n + 1
-      })
-      setTabs(saved.tabs)
+        const n = Number.parseInt(t.id.replace(/\D/g, ""), 10);
+        if (!Number.isNaN(n) && n >= idCounter) idCounter = n + 1;
+      });
+      setTabs(saved.tabs);
       setActiveId(
         saved.tabs.some((t) => t.id === saved.activeId)
           ? saved.activeId
           : saved.tabs[0].id,
-      )
+      );
       setLines([
         {
           type: "info",
           text: "Se restauró tu trabajo guardado anteriormente.",
         },
-      ])
+      ]);
     }
-    hydratedRef.current = true
+    hydratedRef.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, []);
 
   // Debounced auto-save to localStorage whenever tabs or active tab change
   useEffect(() => {
-    if (!hydratedRef.current) return
-    setSaveState("saving")
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    if (!hydratedRef.current) return;
+    setSaveState("saving");
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
-      saveWorkspace({ tabs, activeId })
-      setSaveState("saved")
-      setTimeout(() => setSaveState("idle"), 1500)
-    }, 600)
+      saveWorkspace({ tabs, activeId });
+      setSaveState("saved");
+      setTimeout(() => setSaveState("idle"), 1500);
+    }, 600);
     return () => {
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
-    }
-  }, [tabs, activeId])
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, [tabs, activeId]);
 
   const updateActiveContent = useCallback(
     (content: string) => {
       if (debugActive) {
-        stop()
+        stop();
       }
       setTabs((prev) =>
         prev.map((t) => (t.id === activeId ? { ...t, content } : t)),
-      )
+      );
     },
     [activeId, debugActive],
-  )
+  );
 
-  const bumpHistory = () => setHistoryVersion((v) => v + 1)
+  const bumpHistory = () => setHistoryVersion((v) => v + 1);
 
   const getHistory = (id: string): HistoryEntry => {
-    return historiesRef.current[id] ?? { past: [], future: [] }
-  }
+    return historiesRef.current[id] ?? { past: [], future: [] };
+  };
 
   const pushToPast = (id: string, content: string, cursor: number) => {
-    const entry = getHistory(id)
-    const past = [...entry.past, { content, cursor }]
-    if (past.length > 100) past.shift()
-    historiesRef.current[id] = { past, future: [] }
-    bumpHistory()
-  }
+    const entry = getHistory(id);
+    const past = [...entry.past, { content, cursor }];
+    if (past.length > 100) past.shift();
+    historiesRef.current[id] = { past, future: [] };
+    bumpHistory();
+  };
 
   const undo = useCallback(() => {
-    const entry = getHistory(activeId)
-    if (entry.past.length === 0) return
-    const currentCursor = editorRef.current?.getCursorPosition() ?? 0
-    const currentSnapshot = { content: active.content, cursor: currentCursor }
-    const previous = entry.past[entry.past.length - 1]
-    const newPast = entry.past.slice(0, -1)
+    const entry = getHistory(activeId);
+    if (entry.past.length === 0) return;
+    const currentCursor = editorRef.current?.getCursorPosition() ?? 0;
+    const currentSnapshot = { content: active.content, cursor: currentCursor };
+    const previous = entry.past[entry.past.length - 1];
+    const newPast = entry.past.slice(0, -1);
     historiesRef.current[activeId] = {
       past: newPast,
       future: [currentSnapshot, ...entry.future],
-    }
-    bumpHistory()
-    isUndoingRef.current = true
-    updateActiveContent(previous.content)
-    editorRef.current?.setCursorPosition(previous.cursor)
+    };
+    bumpHistory();
+    isUndoingRef.current = true;
+    updateActiveContent(previous.content);
+    editorRef.current?.setCursorPosition(previous.cursor);
     prevStateRef.current[activeId] = {
       content: previous.content,
       cursor: previous.cursor,
-    }
-  }, [activeId, active.content])
+    };
+  }, [activeId, active.content]);
 
   const redo = useCallback(() => {
-    const entry = getHistory(activeId)
-    if (entry.future.length === 0) return
-    const currentCursor = editorRef.current?.getCursorPosition() ?? 0
-    const currentSnapshot = { content: active.content, cursor: currentCursor }
-    const next = entry.future[0]
-    const newFuture = entry.future.slice(1)
+    const entry = getHistory(activeId);
+    if (entry.future.length === 0) return;
+    const currentCursor = editorRef.current?.getCursorPosition() ?? 0;
+    const currentSnapshot = { content: active.content, cursor: currentCursor };
+    const next = entry.future[0];
+    const newFuture = entry.future.slice(1);
     historiesRef.current[activeId] = {
       past: [...entry.past, currentSnapshot],
       future: newFuture,
-    }
-    bumpHistory()
-    isUndoingRef.current = true
-    updateActiveContent(next.content)
-    editorRef.current?.setCursorPosition(next.cursor)
+    };
+    bumpHistory();
+    isUndoingRef.current = true;
+    updateActiveContent(next.content);
+    editorRef.current?.setCursorPosition(next.cursor);
     prevStateRef.current[activeId] = {
       content: next.content,
       cursor: next.cursor,
-    }
-  }, [activeId, active.content])
+    };
+  }, [activeId, active.content]);
 
-  const canUndo = getHistory(activeId).past.length > 0
-  const canRedo = getHistory(activeId).future.length > 0
+  const canUndo = getHistory(activeId).past.length > 0;
+  const canRedo = getHistory(activeId).future.length > 0;
 
   // Snapshot history on content changes (grouped by 400ms debounce)
   useEffect(() => {
     if (isUndoingRef.current) {
-      isUndoingRef.current = false
-      prevActiveIdRef.current = activeId
-      return
+      isUndoingRef.current = false;
+      prevActiveIdRef.current = activeId;
+      return;
     }
 
     if (prevActiveIdRef.current !== activeId) {
@@ -352,223 +361,226 @@ export function PseintIDE() {
         prevStateRef.current[activeId] = {
           content: active.content,
           cursor: 0,
-        }
+        };
       }
-      prevActiveIdRef.current = activeId
-      return
+      prevActiveIdRef.current = activeId;
+      return;
     }
 
-    const prev = prevStateRef.current[activeId]
+    const prev = prevStateRef.current[activeId];
     if (!prev) {
       prevStateRef.current[activeId] = {
         content: active.content,
         cursor: editorRef.current?.getCursorPosition() ?? 0,
-      }
-      return
+      };
+      return;
     }
-    if (prev.content === active.content) return
+    if (prev.content === active.content) return;
 
     if (!snapshotTimerRef.current) {
-      pushToPast(activeId, prev.content, prev.cursor)
+      pushToPast(activeId, prev.content, prev.cursor);
     }
 
-    if (snapshotTimerRef.current) clearTimeout(snapshotTimerRef.current)
+    if (snapshotTimerRef.current) clearTimeout(snapshotTimerRef.current);
     snapshotTimerRef.current = setTimeout(() => {
-      snapshotTimerRef.current = null
-    }, 400)
+      snapshotTimerRef.current = null;
+    }, 400);
 
     prevStateRef.current[activeId] = {
       content: active.content,
       cursor: editorRef.current?.getCursorPosition() ?? 0,
-    }
-  }, [active.content, activeId])
+    };
+  }, [active.content, activeId]);
 
   const insertSnippet = useCallback(
     (code: string) => {
       if (editorRef.current) {
-        const sep = active.content.length && !active.content.endsWith("\n") ? "\n" : ""
-        editorRef.current.insertAtCursor(sep + code + "\n")
+        const sep =
+          active.content.length && !active.content.endsWith("\n") ? "\n" : "";
+        editorRef.current.insertAtCursor(sep + code + "\n");
       } else {
         setTabs((prev) =>
           prev.map((t) => {
-            if (t.id !== activeId) return t
-            const sep = t.content.length && !t.content.endsWith("\n") ? "\n" : ""
-            return { ...t, content: t.content + sep + code + "\n" }
+            if (t.id !== activeId) return t;
+            const sep =
+              t.content.length && !t.content.endsWith("\n") ? "\n" : "";
+            return { ...t, content: t.content + sep + code + "\n" };
           }),
-        )
+        );
       }
     },
     [activeId, active.content],
-  )
+  );
 
   const addTab = () => {
-    const count = tabs.length + 1
+    const count = tabs.length + 1;
     const tab: FileTab = {
       id: newId(),
       name: `archivo${count}.psc`,
       content: "Algoritmo SinTitulo\n\t\nFinAlgoritmo",
-    }
-    setTabs((prev) => [...prev, tab])
-    setActiveId(tab.id)
-  }
+    };
+    setTabs((prev) => [...prev, tab]);
+    setActiveId(tab.id);
+  };
 
   const requestCloseTab = (id: string, e: MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation()
-    const tab = tabs.find((t) => t.id === id)
-    if (!tab) return
-    setTabPendingClose(tab)
-  }
+    e.stopPropagation();
+    const tab = tabs.find((t) => t.id === id);
+    if (!tab) return;
+    setTabPendingClose(tab);
+  };
 
   const confirmCloseTab = () => {
-    const id = tabPendingClose?.id
-    if (!id) return
+    const id = tabPendingClose?.id;
+    if (!id) return;
     if (debugActive && id === activeId) {
-      stop()
+      stop();
     }
     setTabs((prev) => {
-      if (prev.length === 1) return prev
-      const next = prev.filter((t) => t.id !== id)
-      if (id === activeId) setActiveId(next[next.length - 1].id)
-      return next
-    })
-    delete historiesRef.current[id]
-    delete prevStateRef.current[id]
-    bumpHistory()
-    setTabPendingClose(null)
-  }
+      if (prev.length === 1) return prev;
+      const next = prev.filter((t) => t.id !== id);
+      if (id === activeId) setActiveId(next[next.length - 1].id);
+      return next;
+    });
+    delete historiesRef.current[id];
+    delete prevStateRef.current[id];
+    bumpHistory();
+    setTabPendingClose(null);
+  };
 
   const renameTab = (id: string) => {
-    const tab = tabs.find((t) => t.id === id)
-    if (!tab) return
-    setEditingTabId(id)
-    setEditingTabName(stripFileExtension(tab.name))
-  }
+    const tab = tabs.find((t) => t.id === id);
+    if (!tab) return;
+    setEditingTabId(id);
+    setEditingTabName(stripFileExtension(tab.name));
+  };
 
   const saveRenamedTab = () => {
-    if (!editingTabId) return
-    const nextName = editingTabName.trim()
+    if (!editingTabId) return;
+    const nextName = editingTabName.trim();
     if (nextName) {
       setTabs((prev) =>
         prev.map((t) => (t.id === editingTabId ? { ...t, name: nextName } : t)),
-      )
+      );
     }
-    setEditingTabId(null)
-    setEditingTabName("")
-  }
+    setEditingTabId(null);
+    setEditingTabName("");
+  };
 
   const cancelRenameTab = () => {
-    setEditingTabId(null)
-    setEditingTabName("")
-  }
+    setEditingTabId(null);
+    setEditingTabName("");
+  };
 
-  const openFile = () => fileInputRef.current?.click()
+  const openFile = () => fileInputRef.current?.click();
 
   const onFileChosen = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.currentTarget.files?.[0]
-    if (!file) return
-    const reader = new FileReader()
+    const file = e.currentTarget.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
     reader.onload = () => {
       const tab: FileTab = {
         id: newId(),
         name: file.name,
         content: String(reader.result ?? ""),
-      }
-      setTabs((prev) => [...prev, tab])
-      setActiveId(tab.id)
-    }
-    reader.readAsText(file)
-    e.currentTarget.value = ""
-  }
+      };
+      setTabs((prev) => [...prev, tab]);
+      setActiveId(tab.id);
+    };
+    reader.readAsText(file);
+    e.currentTarget.value = "";
+  };
 
   const downloadFile = (format: "psc" | "txt" = "psc") => {
-    const blob = new Blob([active.content], { type: "text/plain;charset=utf-8" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    const baseName = stripFileExtension(active.name).trim() || "archivo"
-    a.download = `${baseName}.${format}`
-    a.click()
-    URL.revokeObjectURL(url)
-  }
-
+    const blob = new Blob([active.content], {
+      type: "text/plain;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    const baseName = stripFileExtension(active.name).trim() || "archivo";
+    a.download = `${baseName}.${format}`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const appendLine = (line: ConsoleLine) => {
     if (line.type === "info" && line.text === "\u0001CLEAR\u0001") {
-      setLines([])
-      return
+      setLines([]);
+      return;
     }
-    setLines((prev) => [...prev, line])
-  }
+    setLines((prev) => [...prev, line]);
+  };
 
   const requestInput = (): Promise<string> => {
-    setWaitingForInput(true)
+    setWaitingForInput(true);
     return new Promise<string>((resolve) => {
       inputResolverRef.current = (v: string) => {
-        setWaitingForInput(false)
-        inputResolverRef.current = null
-        resolve(v)
-      }
-    })
-  }
+        setWaitingForInput(false);
+        inputResolverRef.current = null;
+        resolve(v);
+      };
+    });
+  };
 
   const submitInput = (value: string) => {
-    inputResolverRef.current?.(value)
-  }
+    inputResolverRef.current?.(value);
+  };
 
   const clearDebugState = useCallback(() => {
-    setDebugActive(false)
-    setDebugPaused(false)
-    setDebugLine(null)
-    setDebugVars([])
-    debugControllerRef.current = { active: false, continueMode: false }
-  }, [])
+    setDebugActive(false);
+    setDebugPaused(false);
+    setDebugLine(null);
+    setDebugVars([]);
+    debugControllerRef.current = { active: false, continueMode: false };
+  }, []);
 
   const onStep = useCallback(async (line: number, vars: VarSnapshot[]) => {
-    if (!debugControllerRef.current.active) return
+    if (!debugControllerRef.current.active) return;
     if (debugControllerRef.current.continueMode) {
       // In continue mode, flush sync so the highlight updates immediately
       flushSync(() => {
-        setDebugLine(line)
-        setDebugVars(vars)
-        setDebugPaused(false)
-      })
-      return
+        setDebugLine(line);
+        setDebugVars(vars);
+        setDebugPaused(false);
+      });
+      return;
     }
-    setDebugLine(line)
-    setDebugVars(vars)
-    setDebugPaused(true)
+    setDebugLine(line);
+    setDebugVars(vars);
+    setDebugPaused(true);
     return new Promise<void>((resolve) => {
       debugControllerRef.current.resume = () => {
-        debugControllerRef.current.resume = undefined
-        resolve()
-      }
-    })
-  }, [])
+        debugControllerRef.current.resume = undefined;
+        resolve();
+      };
+    });
+  }, []);
 
   const stepDebug = () => {
-    if (!debugControllerRef.current.active) return
-    debugControllerRef.current.continueMode = false
-    debugControllerRef.current.resume?.()
-  }
+    if (!debugControllerRef.current.active) return;
+    debugControllerRef.current.continueMode = false;
+    debugControllerRef.current.resume?.();
+  };
 
   const run = async (debug = false) => {
-    if (running) return
-    setLines([])
-    setVars([])
-    setErrorLines([])
-    setRunning(true)
-    abortRef.current = { aborted: false }
-    clearDebugState()
+    if (running) return;
+    setLines([]);
+    setVars([]);
+    setErrorLines([]);
+    setRunning(true);
+    abortRef.current = { aborted: false };
+    clearDebugState();
     if (debug) {
-      setDebugActive(true)
-      debugControllerRef.current = { active: true, continueMode: false }
+      setDebugActive(true);
+      debugControllerRef.current = { active: true, continueMode: false };
     }
     try {
       await runPseint(active.content, {
         onOutput: (line) => {
-          appendLine(line)
+          appendLine(line);
           if (line.line && (line.type === "error" || line.type === "warning")) {
-            setErrorLines((prev) => Array.from(new Set([...prev, line.line!])))
+            setErrorLines((prev) => Array.from(new Set([...prev, line.line!])));
           }
         },
         requestInput,
@@ -578,85 +590,85 @@ export function PseintIDE() {
         strongTyping,
         debug,
         onStep,
-      })
+      });
     } finally {
-      appendLine({ type: "info", text: "--- Ejecución finalizada ---" })
-      setRunning(false)
-      setWaitingForInput(false)
-      clearDebugState()
+      appendLine({ type: "info", text: "--- Ejecución finalizada ---" });
+      setRunning(false);
+      setWaitingForInput(false);
+      clearDebugState();
     }
-  }
+  };
 
   const stop = () => {
-    abortRef.current.aborted = true
+    abortRef.current.aborted = true;
     // unblock any pending input
-    inputResolverRef.current?.("")
-    setWaitingForInput(false)
+    inputResolverRef.current?.("");
+    setWaitingForInput(false);
     // release any active debug pause so the interpreter sees the abort signal
-    debugControllerRef.current.resume?.()
-  }
+    debugControllerRef.current.resume?.();
+  };
 
   const formatActiveTab = () => {
-    const formatted = formatPseint(active.content)
-    updateActiveContent(formatted)
-  }
+    const formatted = formatPseint(active.content);
+    updateActiveContent(formatted);
+  };
 
   // Keyboard shortcuts: Ctrl/Cmd+Enter = run, Ctrl/Cmd+S = download, Ctrl+Shift+F = format
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (tabPendingClose && e.key === "Escape") {
-        e.preventDefault()
-        setTabPendingClose(null)
-        return
+        e.preventDefault();
+        setTabPendingClose(null);
+        return;
       }
-      const mod = e.ctrlKey || e.metaKey
-      if (!mod) return
+      const mod = e.ctrlKey || e.metaKey;
+      if (!mod) return;
       if (e.shiftKey && e.key.toLowerCase() === "f") {
-        e.preventDefault()
-        formatActiveTab()
-        return
+        e.preventDefault();
+        formatActiveTab();
+        return;
       }
       if (e.key === "Enter") {
-        e.preventDefault()
-        if (!running) void run()
+        e.preventDefault();
+        if (!running) void run();
       } else if (e.key.toLowerCase() === "s") {
-        e.preventDefault()
-        downloadFile("psc")
+        e.preventDefault();
+        downloadFile("psc");
       }
-    }
-    window.addEventListener("keydown", onKey)
-    return () => window.removeEventListener("keydown", onKey)
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [running, active, tabPendingClose, strictMode])
+  }, [running, active, tabPendingClose, strictMode]);
 
   // Resizable split: drag the divider to change the console width (desktop).
   useEffect(() => {
     const onMove = (e: globalThis.MouseEvent) => {
-      if (!draggingRef.current || !splitRef.current) return
-      const rect = splitRef.current.getBoundingClientRect()
-      const fromRight = ((rect.right - e.clientX) / rect.width) * 100
-      setConsolePct(Math.min(70, Math.max(20, fromRight)))
-    }
+      if (!draggingRef.current || !splitRef.current) return;
+      const rect = splitRef.current.getBoundingClientRect();
+      const fromRight = ((rect.right - e.clientX) / rect.width) * 100;
+      setConsolePct(Math.min(70, Math.max(20, fromRight)));
+    };
     const onUp = () => {
       if (draggingRef.current) {
-        draggingRef.current = false
-        document.body.style.cursor = ""
-        document.body.style.userSelect = ""
+        draggingRef.current = false;
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
       }
-    }
-    window.addEventListener("mousemove", onMove)
-    window.addEventListener("mouseup", onUp)
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
     return () => {
-      window.removeEventListener("mousemove", onMove)
-      window.removeEventListener("mouseup", onUp)
-    }
-  }, [])
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, []);
 
   const startDrag = () => {
-    draggingRef.current = true
-    document.body.style.cursor = "col-resize"
-    document.body.style.userSelect = "none"
-  }
+    draggingRef.current = true;
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+  };
 
   return (
     <div className="flex h-screen flex-col bg-background text-foreground">
@@ -664,8 +676,11 @@ export function PseintIDE() {
       <header className="flex items-center justify-between border-b border-border bg-sidebar px-4 py-2">
         <div className="flex items-center gap-2">
           <div className="leading-tight flex  items-center gap- text-lg font-bold">
-            <span className="bg-gradient-to-r uppercase from-sky-400 via-indigo-500 to-fuchsia-500 bg-clip-text text-transparent">Next</span>
-            PSeint  </div>
+            <span className="bg-gradient-to-r uppercase from-sky-400 via-indigo-500 to-fuchsia-500 bg-clip-text text-transparent">
+              Next
+            </span>
+            PSeint{" "}
+          </div>
           {/* Save indicator */}
           <div className="ml-2 hidden  items-center gap-1.5 text-xs text-muted-foreground sm:flex">
             {saveState === "saving" && <Cloud className="size-3.5" />}
@@ -682,14 +697,11 @@ export function PseintIDE() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-
           {/* Mobile: single collapsible "+" menu for Abrir / Descargar / Configurar */}
           <DropdownMenu>
-            <Tooltip >
+            <Tooltip>
               <TooltipTrigger asChild>
-                <DropdownMenuTrigger
-                  className="flex cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:hidden"
-                >
+                <DropdownMenuTrigger className="flex cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:hidden">
                   <Plus className="size-4" />
                 </DropdownMenuTrigger>
               </TooltipTrigger>
@@ -718,7 +730,7 @@ export function PseintIDE() {
           </DropdownMenu>
 
           {/* Desktop: separate buttons (md: and up) */}
-          <Tooltip >
+          <Tooltip>
             <TooltipTrigger asChild>
               <button
                 onClick={openFile}
@@ -730,18 +742,18 @@ export function PseintIDE() {
             <TooltipContent side="bottom">Abrir archivo</TooltipContent>
           </Tooltip>
           <DropdownMenu>
-            <Tooltip >
+            <Tooltip>
               <TooltipTrigger asChild>
-                <DropdownMenuTrigger
-                  className="hidden cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:flex"
-                >
+                <DropdownMenuTrigger className="hidden cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:flex">
                   <Download className="size-4" />
                 </DropdownMenuTrigger>
               </TooltipTrigger>
               <TooltipContent side="bottom">Descargar</TooltipContent>
             </Tooltip>
             <DropdownMenuContent centerScreen className="w-56">
-              <div className="px-2 py-1.5 text-sm font-medium">Descargar como</div>
+              <div className="px-2 py-1.5 text-sm font-medium">
+                Descargar como
+              </div>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => downloadFile("psc")}>
                 Archivo PSeInt (.psc)
@@ -779,25 +791,25 @@ export function PseintIDE() {
             consoleFontSize={consoleFontSize}
             setConsoleFontSize={setConsoleFontSize}
           />
-    
-            <button
-              onClick={() => void run(true)}
-              title="Depurar paso a paso"
-              disabled={running }
-              className={`${running ? "bg-muted text-muted-foreground": " hover:bg-accent hover:brightness-110"} flex cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm font-medium transition-colors
+
+          <button
+            onClick={() => void run(true)}
+            title="Depurar paso a paso"
+            disabled={running}
+            className={`${running ? "bg-muted text-muted-foreground" : " hover:bg-accent hover:brightness-110"} flex cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm font-medium transition-colors
                duration-200`}
-            >
-              <Bug className="size-4" />
-              <span className="hidden md:flex font-bold"> Depurar</span>
-            </button>
-       
+          >
+            <Bug className="size-4" />
+            <span className="hidden md:flex font-bold"> Depurar</span>
+          </button>
+
           {running ? (
             <button
               onClick={stop}
               className="flex cursor-pointer items-center gap-1.5  md:w-28  flex items-center justify-center rounded-md bg-destructive px-3 py-1.5 text-sm font-medium text-white transition-colors hover:brightness-110 duration-200"
             >
               <Square className="size-4" />
-                           <span className="hidden md:flex font-bold">Detener</span>
+              <span className="hidden md:flex font-bold">Detener</span>
             </button>
           ) : (
             <button
@@ -813,10 +825,7 @@ export function PseintIDE() {
       </header>
 
       {/* Main split */}
-      <div
-        ref={splitRef}
-        className="flex min-h-0 flex-1 flex-col lg:flex-row"
-      >
+      <div ref={splitRef} className="flex min-h-0 flex-1 flex-col lg:flex-row">
         {/* Operations panel (flat, scrollable list) on the far left */}
         {showOps ? (
           <div className="flex shrink-0 flex-col border-b border-border animate-in slide-in-from-left-2 fade-in duration-300 lg:w-64 lg:border-b-0 lg:border-r">
@@ -834,7 +843,7 @@ export function PseintIDE() {
             title="Mostrar operaciones"
           >
             <PanelLeftOpen className="size-4" />
-            
+
             <span className="lg:[writing-mode:vertical-rl]">Operaciones</span>
           </button>
         )}
@@ -849,10 +858,11 @@ export function PseintIDE() {
                   key={t.id}
                   onClick={() => setActiveId(t.id)}
                   onDblClick={() => renameTab(t.id)}
-                  className={`group flex shrink-0 cursor-pointer items-center gap-2 border-r border-border px-3 py-2 text-sm transition-colors ${t.id === activeId
+                  className={`group flex shrink-0 cursor-pointer items-center gap-2 border-r border-border px-3 py-2 text-sm transition-colors ${
+                    t.id === activeId
                       ? "bg-card text-foreground"
                       : "text-muted-foreground hover:bg-accent/50"
-                    }`}
+                  }`}
                   title="Doble clic para renombrar"
                 >
                   <FileCode2 className="size-3.5 text-primary" />
@@ -860,24 +870,28 @@ export function PseintIDE() {
                     <input
                       ref={renameInputRef}
                       value={editingTabName}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) => setEditingTabName(e.currentTarget.value)}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                        setEditingTabName(e.currentTarget.value)
+                      }
                       onClick={(e) => e.stopPropagation()}
                       onDblClick={(e) => e.stopPropagation()}
                       onBlur={saveRenamedTab}
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
-                          e.preventDefault()
-                          saveRenamedTab()
+                          e.preventDefault();
+                          saveRenamedTab();
                         }
                         if (e.key === "Escape") {
-                          e.preventDefault()
-                          cancelRenameTab()
+                          e.preventDefault();
+                          cancelRenameTab();
                         }
                       }}
                       className="min-w-24 rounded-md border border-border bg-background px-2 py-1 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
                     />
                   ) : (
-                    <span className="max-w-40 truncate">{stripFileExtension(t.name)}</span>
+                    <span className="max-w-40 truncate">
+                      {stripFileExtension(t.name)}
+                    </span>
                   )}
                   <button
                     onClick={(e) => requestCloseTab(t.id, e)}
@@ -889,7 +903,7 @@ export function PseintIDE() {
                 </div>
               ))}
             </div>
-            <Tooltip >
+            <Tooltip>
               <TooltipTrigger asChild>
                 <button
                   onClick={addTab}
@@ -901,7 +915,7 @@ export function PseintIDE() {
               </TooltipTrigger>
               <TooltipContent side="bottom">Nueva pestaña</TooltipContent>
             </Tooltip>
-            <Tooltip >
+            <Tooltip>
               <TooltipTrigger asChild>
                 <button
                   onClick={formatActiveTab}
@@ -912,7 +926,7 @@ export function PseintIDE() {
               </TooltipTrigger>
               <TooltipContent side="bottom">Formatear</TooltipContent>
             </Tooltip>
-            <Tooltip >
+            <Tooltip>
               <TooltipTrigger asChild>
                 <button
                   onClick={undo}
@@ -925,7 +939,7 @@ export function PseintIDE() {
               </TooltipTrigger>
               <TooltipContent side="bottom">Deshacer</TooltipContent>
             </Tooltip>
-            <Tooltip >
+            <Tooltip>
               <TooltipTrigger asChild>
                 <button
                   onClick={redo}
@@ -943,13 +957,24 @@ export function PseintIDE() {
               className="flex shrink-0 cursor-pointer items-center justify-center gap-1.5 border-l border-border bg-sidebar px-2.5 py-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground lg:hidden"
               title="Mostrar operaciones"
             >
-             <PanelTopOpen className=" size-4" />
+              <PanelTopOpen className=" size-4" />
             </button>
           </div>
 
           {/* Editor */}
           <div className="min-h-0 flex-1">
-            <CodeEditor ref={editorRef} value={active.content} onChange={updateActiveContent} errorLines={errorLines} onUndo={undo} onRedo={redo} highlightVariable={hoveredVariable} highlightLine={debugActive ? debugLine : null} fontSize={fontSize} editorFont={editorFont} />
+            <CodeEditor
+              ref={editorRef}
+              value={active.content}
+              onChange={updateActiveContent}
+              errorLines={errorLines}
+              onUndo={undo}
+              onRedo={redo}
+              highlightVariable={hoveredVariable}
+              highlightLine={debugActive ? debugLine : null}
+              fontSize={fontSize}
+              editorFont={editorFont}
+            />
           </div>
         </section>
 
@@ -974,10 +999,11 @@ export function PseintIDE() {
               <button
                 type="button"
                 onClick={() => setRightTab("console")}
-                className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${rightTab === "console"
+                className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                  rightTab === "console"
                     ? "bg-accent text-foreground"
                     : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-                  }`}
+                }`}
               >
                 <Terminal className="size-3.5" />
                 Consola
@@ -985,22 +1011,22 @@ export function PseintIDE() {
               <button
                 type="button"
                 onClick={() => setRightTab("flowchart")}
-                className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${rightTab === "flowchart"
+                className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                  rightTab === "flowchart"
                     ? "bg-accent text-foreground"
                     : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-                  }`}
+                }`}
               >
                 <Workflow className="size-3.5" />
                 Diagrama
               </button>
             </div>
             <div className="flex items-center gap-2">
-            
               {rightTab === "console" && (
                 <button
                   onClick={() => {
-                    setLines([])
-                    setVars([])
+                    setLines([]);
+                    setVars([]);
                   }}
                   className="flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                   title="Limpiar consola"
@@ -1017,7 +1043,7 @@ export function PseintIDE() {
               {debugActive && (
                 <div className="flex items-center justify-between border-b border-border bg-sidebar px-3 py-2">
                   <div className="flex items-center gap-2">
-                  {/*   <button
+                    {/*   <button
                       type="button"
                       onClick={stepDebug}
                       disabled={!debugPaused || waitingForInput}
@@ -1032,10 +1058,10 @@ export function PseintIDE() {
                       disabled={!debugPaused || waitingForInput}
                       className="flex cursor-pointer items-center gap-1.5 rounded-md bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                     Paso
+                      Paso
                       <StepForward className="size-3.5" />
                     </button>
-                   {/*  <button
+                    {/*  <button
                       type="button"
                       onClick={continueDebug}
                       disabled={!debugPaused || waitingForInput}
@@ -1044,7 +1070,7 @@ export function PseintIDE() {
                       <Play className="size-3.5" />
                       Continuar
                     </button> */}
-                {/*     <button
+                    {/*     <button
                       type="button"
                       onClick={stop}
                       className="flex cursor-pointer items-center gap-1.5 rounded-md bg-destructive px-2.5 py-1.5 text-xs font-medium text-white transition-colors hover:opacity-90"
@@ -1071,7 +1097,10 @@ export function PseintIDE() {
                 consoleFont={consoleFont}
                 consoleFontSize={consoleFontSize}
               />
-              <VariableInspector vars={debugActive ? debugVars : vars} fontSize={consoleFontSize} />
+              <VariableInspector
+                vars={debugActive ? debugVars : vars}
+                fontSize={consoleFontSize}
+              />
             </div>
           ) : (
             <FlowchartPanel code={active.content} />
@@ -1108,7 +1137,11 @@ export function PseintIDE() {
                   id="close-file-description"
                   className="mt-1 text-sm text-muted-foreground"
                 >
-                  Vas a eliminar <span className="font-medium text-foreground">{tabPendingClose.name}</span>.
+                  Vas a eliminar{" "}
+                  <span className="font-medium text-foreground">
+                    {tabPendingClose.name}
+                  </span>
+                  .
                 </p>
               </div>
             </div>
@@ -1139,5 +1172,5 @@ export function PseintIDE() {
         </div>
       )}
     </div>
-  )
+  );
 }

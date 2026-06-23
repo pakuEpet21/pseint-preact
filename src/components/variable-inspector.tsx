@@ -1,16 +1,20 @@
-import { useState } from "preact/hooks"
-import { Variable as VariableIcon, ChevronDown, ChevronRight } from "lucide-react"
-import type { VarSnapshot } from "@/lib/pseint/interpreter"
+import { useState } from "preact/hooks";
+import {
+  Variable as VariableIcon,
+  ChevronDown,
+  ChevronRight,
+} from "lucide-react";
+import type { VarSnapshot } from "@/lib/pseint/interpreter";
 
 interface VariableInspectorProps {
-  vars: VarSnapshot[]
-  fontSize?: number
+  vars: VarSnapshot[];
+  fontSize?: number;
 }
 
 export function VariableInspector({ vars, fontSize }: VariableInspectorProps) {
-  const [open, setOpen] = useState(true)
+  const [open, setOpen] = useState(true);
 
-  if (!vars.length) return null
+  if (!vars.length) return null;
 
   return (
     <div className="border-t border-border bg-sidebar">
@@ -57,5 +61,5 @@ export function VariableInspector({ vars, fontSize }: VariableInspectorProps) {
         </div>
       )}
     </div>
-  )
+  );
 }

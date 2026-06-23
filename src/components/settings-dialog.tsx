@@ -1,31 +1,31 @@
-import { useEffect, useRef } from "preact/hooks"
-import type { JSX } from "preact"
-import { X, Moon, Sun, Sparkles } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { useEffect, useRef } from "preact/hooks";
+import type { JSX } from "preact";
+import { X, Moon, Sun, Sparkles } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export interface SettingsDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  theme: "light" | "dark" | "dracula"
-  setTheme: (theme: "light" | "dark" | "dracula") => void
-  fontSize: number
-  setFontSize: (size: number) => void
-  strictMode: boolean
-  setStrictMode: (strict: boolean) => void
-  strongTyping: boolean
-  setStrongTyping: (strong: boolean) => void
-  consoleSimple: boolean
-  setConsoleSimple: (simple: boolean) => void
-  consoleFontSize: number
-  setConsoleFontSize: (size: number) => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  theme: "light" | "dark" | "dracula";
+  setTheme: (theme: "light" | "dark" | "dracula") => void;
+  fontSize: number;
+  setFontSize: (size: number) => void;
+  strictMode: boolean;
+  setStrictMode: (strict: boolean) => void;
+  strongTyping: boolean;
+  setStrongTyping: (strong: boolean) => void;
+  consoleSimple: boolean;
+  setConsoleSimple: (simple: boolean) => void;
+  consoleFontSize: number;
+  setConsoleFontSize: (size: number) => void;
 }
 
 function Section({
   title,
   children,
 }: {
-  title: string
-  children: JSX.Element | JSX.Element[]
+  title: string;
+  children: JSX.Element | JSX.Element[];
 }) {
   return (
     <section className="space-y-3">
@@ -34,7 +34,7 @@ function Section({
       </h3>
       {children}
     </section>
-  )
+  );
 }
 
 function ThemeCard({
@@ -44,11 +44,11 @@ function ThemeCard({
   icon,
   className,
 }: {
-  label: string
-  active: boolean
-  onClick: () => void
-  icon: JSX.Element
-  className?: string
+  label: string;
+  active: boolean;
+  onClick: () => void;
+  icon: JSX.Element;
+  className?: string;
 }) {
   return (
     <button
@@ -65,17 +65,16 @@ function ThemeCard({
     >
       {icon}
       <span className="font-medium">{label}</span>
-  
     </button>
-  )
+  );
 }
 
 function Switch({
   checked,
   onCheckedChange,
 }: {
-  checked: boolean
-  onCheckedChange: (checked: boolean) => void
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
 }) {
   return (
     <button
@@ -95,7 +94,7 @@ function Switch({
         )}
       />
     </button>
-  )
+  );
 }
 
 export function SettingsDialog({
@@ -114,29 +113,29 @@ export function SettingsDialog({
   consoleFontSize,
   setConsoleFontSize,
 }: SettingsDialogProps) {
-  const panelRef = useRef<HTMLDivElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!open) return
+    if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onOpenChange(false)
-    }
-    window.addEventListener("keydown", onKey)
-    return () => window.removeEventListener("keydown", onKey)
-  }, [open, onOpenChange])
+      if (e.key === "Escape") onOpenChange(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onOpenChange]);
 
   return (
     <div
       className={cn(
         "fixed inset-0 z-50 transition-all duration-300",
-        open ? "visible opacity-100" : "invisible opacity-0"
+        open ? "visible opacity-100" : "invisible opacity-0",
       )}
     >
       {/* Backdrop */}
       <div
         className={cn(
           "absolute inset-0 bg-black/50 transition-all duration-300",
-          open ? "animate-in fade-in" : ""
+          open ? "animate-in fade-in" : "",
         )}
         onClick={() => onOpenChange(false)}
         aria-hidden="true"
@@ -154,15 +153,12 @@ export function SettingsDialog({
             "transition-all duration-300",
             open
               ? "animate-in zoom-in-95 slide-in-from-top-4 fade-in"
-              : "animate-out zoom-out-95 slide-out-to-top-4 fade-out"
+              : "animate-out zoom-out-95 slide-out-to-top-4 fade-out",
           )}
         >
           {/* Header */}
           <div className="flex items-center justify-between border-b border-border px-6 py-4">
-            <h2
-              id="settings-title"
-              className="text-lg font-semibold"
-            >
+            <h2 id="settings-title" className="text-lg font-semibold">
               Configuración
             </h2>
             <button
@@ -229,7 +225,9 @@ export function SettingsDialog({
                   >
                     -
                   </button>
-                  <span className="w-10 text-center text-sm tabular-nums">{fontSize}px</span>
+                  <span className="w-10 text-center text-sm tabular-nums">
+                    {fontSize}px
+                  </span>
                   <button
                     type="button"
                     onClick={() => setFontSize(Math.min(24, fontSize + 1))}
@@ -258,10 +256,13 @@ export function SettingsDialog({
                     Infiere el tipo de la primera asignación y valida en Leer
                   </div>
                 </div>
-                <Switch checked={strongTyping} onCheckedChange={setStrongTyping} />
+                <Switch
+                  checked={strongTyping}
+                  onCheckedChange={setStrongTyping}
+                />
               </div>
 
-            {/*   <div className="rounded-xl bg-card ">
+              {/*   <div className="rounded-xl bg-card ">
                 <div className="mb-2">
                   <div className="text-sm font-medium">Fuente del editor</div>
                   <div className="text-xs text-muted-foreground">
@@ -292,10 +293,13 @@ export function SettingsDialog({
                     Línea por línea, sin tanto espaciado
                   </div>
                 </div>
-                <Switch checked={consoleSimple} onCheckedChange={setConsoleSimple} />
+                <Switch
+                  checked={consoleSimple}
+                  onCheckedChange={setConsoleSimple}
+                />
               </div>
 
-          {/*     <div className="borde-2 border-b py-2 bg-card ">
+              {/*     <div className="borde-2 border-b py-2 bg-card ">
                 <div className="mb-2">
                   <div className="text-sm font-medium">Fuente de la consola</div>
                   <div className="text-xs text-muted-foreground">
@@ -319,7 +323,9 @@ export function SettingsDialog({
 
               <div className="flex items-center justify-between rounded-xl bg-card ">
                 <div>
-                  <div className="text-sm font-medium">Tamaño de fuente de la consola</div>
+                  <div className="text-sm font-medium">
+                    Tamaño de fuente de la consola
+                  </div>
                   <div className="text-xs text-muted-foreground">
                     Ajusta el tamaño de la salida de la consola
                   </div>
@@ -327,16 +333,22 @@ export function SettingsDialog({
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => setConsoleFontSize(Math.max(10, consoleFontSize - 1))}
+                    onClick={() =>
+                      setConsoleFontSize(Math.max(10, consoleFontSize - 1))
+                    }
                     className="flex size-8 items-center justify-center rounded-md border border-border text-sm hover:bg-accent"
                     aria-label="Disminuir fuente de consola"
                   >
                     -
                   </button>
-                  <span className="w-10 text-center text-sm tabular-nums">{consoleFontSize}px</span>
+                  <span className="w-10 text-center text-sm tabular-nums">
+                    {consoleFontSize}px
+                  </span>
                   <button
                     type="button"
-                    onClick={() => setConsoleFontSize(Math.min(24, consoleFontSize + 1))}
+                    onClick={() =>
+                      setConsoleFontSize(Math.min(24, consoleFontSize + 1))
+                    }
                     className="flex size-8 items-center justify-center rounded-md border border-border text-sm hover:bg-accent"
                     aria-label="Aumentar fuente de consola"
                   >
@@ -345,11 +357,9 @@ export function SettingsDialog({
                 </div>
               </div>
             </Section>
-
-           
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 }

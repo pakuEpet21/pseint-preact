@@ -11,37 +11,37 @@ No persistence or breakpoints are introduced.
 
 ### Decision: Variable snapshot shape
 
-| Option | Tradeoff | Decision |
-|--------|----------|----------|
-| Raw `VariableMap` | Matches proposal wording; requires IDE to format types | Rejected |
-| `VarSnapshot[]` | Reuses existing `emitVariables` formatter; `VariableInspector` consumes it unchanged | Chosen |
+| Option            | Tradeoff                                                                             | Decision |
+| ----------------- | ------------------------------------------------------------------------------------ | -------- |
+| Raw `VariableMap` | Matches proposal wording; requires IDE to format types                               | Rejected |
+| `VarSnapshot[]`   | Reuses existing `emitVariables` formatter; `VariableInspector` consumes it unchanged | Chosen   |
 
 Rationale: `onVariables` already emits `VarSnapshot[]`. Reusing the same shape avoids duplication and keeps the inspector component untouched.
 
 ### Decision: Pause location
 
-| Option | Tradeoff | Decision |
-|--------|----------|----------|
-| Pause only inside `execBlock` | Misses re-evaluation of loop headers | Rejected |
-| Pause at top of `execStmt` plus after each loop `tick()` | Covers every statement and each loop iteration header | Chosen |
+| Option                                                   | Tradeoff                                              | Decision |
+| -------------------------------------------------------- | ----------------------------------------------------- | -------- |
+| Pause only inside `execBlock`                            | Misses re-evaluation of loop headers                  | Rejected |
+| Pause at top of `execStmt` plus after each loop `tick()` | Covers every statement and each loop iteration header | Chosen   |
 
 Rationale: Learners expect each iteration of `Mientras`, `Para`, and `Repetir` to be a visible step, including the header line.
 
 ### Decision: Continue semantics
 
-| Option | Tradeoff | Decision |
-|--------|----------|----------|
-| Continue until next breakpoint | Breakpoints are out of scope | Rejected |
-| Continue until program ends or Stop | Simple and matches learner expectation of "run free" | Chosen |
+| Option                              | Tradeoff                                             | Decision |
+| ----------------------------------- | ---------------------------------------------------- | -------- |
+| Continue until next breakpoint      | Breakpoints are out of scope                         | Rejected |
+| Continue until program ends or Stop | Simple and matches learner expectation of "run free" | Chosen   |
 
 Rationale: The proposal explicitly excludes breakpoints, so Continue runs without further pauses until termination or user stop.
 
 ### Decision: Current-line highlight
 
-| Option | Tradeoff | Decision |
-|--------|----------|----------|
-| Add full-line background in editor body | Requires editor rendering changes | Rejected for v1 |
-| Reuse existing `highlightLine` gutter highlight | Minimal change; clearly indicates the active line | Chosen |
+| Option                                          | Tradeoff                                          | Decision        |
+| ----------------------------------------------- | ------------------------------------------------- | --------------- |
+| Add full-line background in editor body         | Requires editor rendering changes                 | Rejected for v1 |
+| Reuse existing `highlightLine` gutter highlight | Minimal change; clearly indicates the active line | Chosen          |
 
 Rationale: `CodeEditor` already accepts `highlightLine`. A future enhancement can extend the highlight to the editor body.
 
@@ -116,31 +116,31 @@ IDE                         Interpreter
 
 ## File Changes
 
-| File | Action | Description |
-|------|--------|-------------|
-| `src/lib/pseint/interpreter.ts` | Modify | Add `debug`/`onStep` to `RunOptions`; pause in `execStmt` and loop bodies; add `captureVariables` helper |
-| `src/components/pseint-ide.tsx` | Modify | Add debug state, debug button, toolbar, edit detection, and current-line highlight |
-| `src/components/variable-inspector.tsx` | Consume | Reused as-is; IDE passes the active debug-time snapshot |
+| File                                    | Action  | Description                                                                                              |
+| --------------------------------------- | ------- | -------------------------------------------------------------------------------------------------------- |
+| `src/lib/pseint/interpreter.ts`         | Modify  | Add `debug`/`onStep` to `RunOptions`; pause in `execStmt` and loop bodies; add `captureVariables` helper |
+| `src/components/pseint-ide.tsx`         | Modify  | Add debug state, debug button, toolbar, edit detection, and current-line highlight                       |
+| `src/components/variable-inspector.tsx` | Consume | Reused as-is; IDE passes the active debug-time snapshot                                                  |
 
 ## Interfaces / Contracts
 
 ```ts
 // src/lib/pseint/interpreter.ts
 export interface RunOptions {
-  requestInput: (prompt: string) => Promise<string>
-  onOutput: (line: ConsoleLine) => void
-  signal?: { aborted: boolean }
-  onVariables?: (vars: VarSnapshot[]) => void
-  strictMode?: boolean
-  debug?: boolean
-  onStep?: (line: number, vars: VarSnapshot[]) => Promise<void>
+  requestInput: (prompt: string) => Promise<string>;
+  onOutput: (line: ConsoleLine) => void;
+  signal?: { aborted: boolean };
+  onVariables?: (vars: VarSnapshot[]) => void;
+  strictMode?: boolean;
+  debug?: boolean;
+  onStep?: (line: number, vars: VarSnapshot[]) => Promise<void>;
 }
 
 // internal to src/components/pseint-ide.tsx
 interface DebugController {
-  active: boolean
-  continueMode: boolean
-  resume?: () => void
+  active: boolean;
+  continueMode: boolean;
+  resume?: () => void;
 }
 ```
 
@@ -174,11 +174,11 @@ interface DebugController {
 
 ## Testing Strategy
 
-| Layer | What to Test | Approach |
-|-------|-------------|----------|
-| Unit | `onStep` pauses and emits correct line/vars | Manual sample program; no test runner exists |
-| Integration | Debug toolbar controls execution | Manual UI verification |
-| Build | TypeScript compiles and `npm run build` passes | Automated (`npm run build`) |
+| Layer       | What to Test                                   | Approach                                     |
+| ----------- | ---------------------------------------------- | -------------------------------------------- |
+| Unit        | `onStep` pauses and emits correct line/vars    | Manual sample program; no test runner exists |
+| Integration | Debug toolbar controls execution               | Manual UI verification                       |
+| Build       | TypeScript compiles and `npm run build` passes | Automated (`npm run build`)                  |
 
 ## Build / Verification Notes
 

@@ -19,11 +19,11 @@ Standard (Strict TDD is disabled; no test runner is configured).
 
 ## Files Changed
 
-| File | Action | What Was Done |
-|------|--------|---------------|
-| `src/lib/pseint/interpreter.ts` | Modified | Added `debug`/`onStep` to `RunOptions`; extracted `captureVariables`; added `maybePause`; paused in `execStmt` and loop bodies |
-| `src/components/pseint-ide.tsx` | Modified | Added debug state, controller, `onStep` handler, Step/Continue/Stop controls, debug button, debug toolbar, line highlight, variable inspector wiring, and edit detection |
-| `src/components/settings-dialog.tsx` | Modified | Removed unused `Check` and `Trash2` imports to satisfy `noUnusedLocals` |
+| File                                 | Action   | What Was Done                                                                                                                                                            |
+| ------------------------------------ | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/lib/pseint/interpreter.ts`      | Modified | Added `debug`/`onStep` to `RunOptions`; extracted `captureVariables`; added `maybePause`; paused in `execStmt` and loop bodies                                           |
+| `src/components/pseint-ide.tsx`      | Modified | Added debug state, controller, `onStep` handler, Step/Continue/Stop controls, debug button, debug toolbar, line highlight, variable inspector wiring, and edit detection |
+| `src/components/settings-dialog.tsx` | Modified | Removed unused `Check` and `Trash2` imports to satisfy `noUnusedLocals`                                                                                                  |
 
 ## Deviations from Design
 
@@ -62,14 +62,14 @@ computing gzip size...
 
 ## Manual Verification Status
 
-| Scenario | Status | Notes |
-|----------|--------|-------|
-| Start debug and step through a simple assignment | Ready for manual test | `onStep` fires before each statement |
-| Variable inspector updates after each step | Ready for manual test | `debugVars` is fed to `VariableInspector` |
-| Step through `Leer` and submit input | Ready for manual test | `Leer` pauses on its line; input awaited |
-| Step through `Mientras`; each iteration pauses on header | Ready for manual test | `maybePause` called after loop `tick()` |
-| Continue runs to completion | Ready for manual test | `continueMode` resolves `onStep` immediately |
-| Edit code during debug ends session cleanly | Ready for manual test | `updateActiveContent` calls `stop()` |
+| Scenario                                                 | Status                | Notes                                        |
+| -------------------------------------------------------- | --------------------- | -------------------------------------------- |
+| Start debug and step through a simple assignment         | Ready for manual test | `onStep` fires before each statement         |
+| Variable inspector updates after each step               | Ready for manual test | `debugVars` is fed to `VariableInspector`    |
+| Step through `Leer` and submit input                     | Ready for manual test | `Leer` pauses on its line; input awaited     |
+| Step through `Mientras`; each iteration pauses on header | Ready for manual test | `maybePause` called after loop `tick()`      |
+| Continue runs to completion                              | Ready for manual test | `continueMode` resolves `onStep` immediately |
+| Edit code during debug ends session cleanly              | Ready for manual test | `updateActiveContent` calls `stop()`         |
 
 > Manual verification was not executed because the project has no test runner and verification is automated via `npm run build` per the session context.
 

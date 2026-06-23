@@ -1,23 +1,22 @@
-import { useState } from "preact/hooks"
-import { ChevronRight, PanelBottomClose, PanelLeftClose, PanelTopClose } from "lucide-react"
-import { SNIPPET_CATEGORIES } from "@/lib/pseint/snippets"
+import { useState } from "preact/hooks";
+import { ChevronRight, PanelTopClose } from "lucide-react";
+import { SNIPPET_CATEGORIES } from "@/lib/pseint/snippets";
 
 export function SnippetPanel({
   onInsert,
   onHide,
 }: {
-  onInsert: (code: string) => void
-  onHide: () => void
+  onInsert: (code: string) => void;
+  onHide: () => void;
 }) {
   const [openCategory, setOpenCategory] = useState(() => {
-    const hasOps = SNIPPET_CATEGORIES.some((c) => c.name === "Operaciones")
-    return hasOps ? "Operaciones" : SNIPPET_CATEGORIES[0]?.name ?? ""
-  })
+    const hasOps = SNIPPET_CATEGORIES.some((c) => c.name === "Operaciones");
+    return hasOps ? "Operaciones" : (SNIPPET_CATEGORIES[0]?.name ?? "");
+  });
 
   return (
     <div className="flex h-full w-full flex-col bg-sidebar">
       <div className="flex items-center gap-1.5 border-b border-border px-3 py-2">
-     
         <button
           type="button"
           onClick={onHide}
@@ -31,7 +30,7 @@ export function SnippetPanel({
       <div className="min-h-0 flex-1 overflow-y-auto">
         <ul className="divide-y divide-border/60">
           {SNIPPET_CATEGORIES.map((cat) => {
-            const open = cat.name === openCategory
+            const open = cat.name === openCategory;
             return (
               <li key={cat.name}>
                 <button
@@ -74,10 +73,10 @@ export function SnippetPanel({
                   </ul>
                 )}
               </li>
-            )
+            );
           })}
         </ul>
       </div>
     </div>
-  )
+  );
 }

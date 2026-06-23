@@ -5,13 +5,13 @@ export type TokenType =
   | "keyword"
   | "op"
   | "newline"
-  | "eof"
+  | "eof";
 
 export interface Token {
-  type: TokenType
-  value: string
-  line: number
-  col: number
+  type: TokenType;
+  value: string;
+  line: number;
+  col: number;
 }
 
 // PSeInt keywords (stored lowercase for case-insensitive matching)
@@ -78,118 +78,118 @@ export const KEYWORDS = new Set([
   "segundos",
   "limpiar",
   "pantalla",
-])
+]);
 
-const TWO_CHAR_OPS = ["<-", "<=", ">=", "<>", "==", ":="]
+const TWO_CHAR_OPS = ["<-", "<=", ">=", "<>", "==", ":="];
 
 export function tokenize(src: string): Token[] {
-  const tokens: Token[] = []
-  let i = 0
-  let line = 1
-  let col = 1
+  const tokens: Token[] = [];
+  let i = 0;
+  let line = 1;
+  let col = 1;
 
   const push = (type: TokenType, value: string) => {
-    tokens.push({ type, value, line, col })
-  }
+    tokens.push({ type, value, line, col });
+  };
 
   while (i < src.length) {
-    const ch = src[i]
+    const ch = src[i];
 
     // Newlines
     if (ch === "\n") {
-      push("newline", "\n")
-      i++
-      line++
-      col = 1
-      continue
+      push("newline", "\n");
+      i++;
+      line++;
+      col = 1;
+      continue;
     }
 
     // Whitespace
     if (ch === " " || ch === "\t" || ch === "\r") {
-      i++
-      col++
-      continue
+      i++;
+      col++;
+      continue;
     }
 
     // Comments: //  or  #
     if ((ch === "/" && src[i + 1] === "/") || ch === "#") {
-      while (i < src.length && src[i] !== "\n") i++
-      continue
+      while (i < src.length && src[i] !== "\n") i++;
+      continue;
     }
 
     // Strings
     if (ch === '"' || ch === "'") {
-      const quote = ch
-      const startCol = col
-      i++
-      col++
-      let str = ""
+      const quote = ch;
+      const startCol = col;
+      i++;
+      col++;
+      let str = "";
       while (i < src.length && src[i] !== quote) {
-        if (src[i] === "\n") break
-        str += src[i]
-        i++
-        col++
+        if (src[i] === "\n") break;
+        str += src[i];
+        i++;
+        col++;
       }
-      i++ // closing quote
-      col++
-      tokens.push({ type: "string", value: str, line, col: startCol })
-      continue
+      i++; // closing quote
+      col++;
+      tokens.push({ type: "string", value: str, line, col: startCol });
+      continue;
     }
 
     // Numbers
     if (/[0-9]/.test(ch)) {
-      const startCol = col
-      let num = ""
+      const startCol = col;
+      let num = "";
       while (i < src.length && /[0-9.]/.test(src[i])) {
-        num += src[i]
-        i++
-        col++
+        num += src[i];
+        i++;
+        col++;
       }
-      tokens.push({ type: "number", value: num, line, col: startCol })
-      continue
+      tokens.push({ type: "number", value: num, line, col: startCol });
+      continue;
     }
 
     // Identifiers / keywords
     if (/[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ_]/.test(ch)) {
-      const startCol = col
-      let id = ""
+      const startCol = col;
+      let id = "";
       while (i < src.length && /[a-zA-Z0-9ñÑáéíóúÁÉÍÓÚüÜ_]/.test(src[i])) {
-        id += src[i]
-        i++
-        col++
+        id += src[i];
+        i++;
+        col++;
       }
-      const lower = id.toLowerCase()
+      const lower = id.toLowerCase();
       tokens.push({
         type: KEYWORDS.has(lower) ? "keyword" : "ident",
         value: id,
         line,
         col: startCol,
-      })
-      continue
+      });
+      continue;
     }
 
     // Two-char operators
-    const two = src.slice(i, i + 2)
+    const two = src.slice(i, i + 2);
     if (TWO_CHAR_OPS.includes(two)) {
-      push("op", two)
-      i += 2
-      col += 2
-      continue
+      push("op", two);
+      i += 2;
+      col += 2;
+      continue;
     }
 
     // Single-char operators
     if ("+-*/^%=<>(),[]&".includes(ch)) {
-      push("op", ch)
-      i++
-      col++
-      continue
+      push("op", ch);
+      i++;
+      col++;
+      continue;
     }
 
     // Unknown char - skip
-    i++
-    col++
+    i++;
+    col++;
   }
 
-  push("eof", "")
-  return tokens
+  push("eof", "");
+  return tokens;
 }
