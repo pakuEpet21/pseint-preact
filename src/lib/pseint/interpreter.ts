@@ -37,6 +37,9 @@ export interface RunOptions {
   // Called before each statement/iteration when debug is true.
   // The returned Promise resolves when execution should continue.
   onStep?: (line: number, vars: VarSnapshot[]) => Promise<void>
+  // When true, infers variable type from the first assignment value
+  // and validates subsequent assignments and Leer against that type.
+  strongTyping?: boolean
 }
 
 type Value = number | string | boolean | Value[]
@@ -743,11 +746,13 @@ class Interpreter {
   steps = 0
   maxSteps = 1_000_000
   strictMode: boolean
+  strongTyping: boolean
 
   constructor(program: Node, opts: RunOptions) {
     this.program = program
     this.opts = opts
     this.strictMode = opts.strictMode ?? false
+    this.strongTyping = opts.strongTyping ?? true
   }
 
   async run() {
@@ -880,13 +885,20 @@ class Interpreter {
           const raw = await this.opts.requestInput("")
           const existing = scope.get(target.name)
           const declared = existing?.declaredType
+          // With strongTyping on, every variable must have a known type (declared or inferred).
+          if (this.strongTyping && !declared) {
+            throw new PseintError(
+              `La variable "${target.name}" no tiene un tipo definido. Asigná un valor primero para inferir el tipo.`,
+              node.line || 0,
+            )
+          }
           let v: Value
           if (declared === "entero" || declared === "real") {
             const t = raw.trim()
             const n = Number(t)
             if (t === "" || Number.isNaN(n))
               throw new PseintError(
-                `Se esperaba un entero para "${target.name}" pero se ingresó "${raw}"`,
+                `Se esperaba un número para "${target.name}" pero se ingresó "${raw}"`,
                 node.line || 0,
               )
             v = n
@@ -1011,7 +1023,8 @@ class Interpreter {
           dims: existing.dims,
         })
       } else {
-        scope.set(target.name, { value: checked })
+        const inferredType = this.strongTyping ? inferType(value) : undefined
+        scope.set(target.name, { value: checked, declaredType: inferredType })
       }
     }
   }
@@ -1340,6 +1353,16 @@ class Interpreter {
 }
 
 // ---------- helpers ----------
+
+// Infer a PSeInt canonical type from a runtime value.
+function inferType(value: Value): string | undefined {
+  if (typeof value === "number") {
+    return Number.isInteger(value) ? "entero" : "real"
+  }
+  if (typeof value === "boolean") return "logico"
+  if (typeof value === "string") return "caracter"
+  return undefined
+}
 
 function defaultFor(type: string): Value {
   if (["logico", "logicos"].includes(type)) return false

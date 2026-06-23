@@ -12,12 +12,10 @@ export interface SettingsDialogProps {
   setFontSize: (size: number) => void
   strictMode: boolean
   setStrictMode: (strict: boolean) => void
+  strongTyping: boolean
+  setStrongTyping: (strong: boolean) => void
   consoleSimple: boolean
   setConsoleSimple: (simple: boolean) => void
-  consoleFont: string
-  setConsoleFont: (font: string) => void
-  editorFont: string
-  setEditorFont: (font: string) => void
   consoleFontSize: number
   setConsoleFontSize: (size: number) => void
 }
@@ -109,12 +107,10 @@ export function SettingsDialog({
   setFontSize,
   strictMode,
   setStrictMode,
+  strongTyping,
+  setStrongTyping,
   consoleSimple,
   setConsoleSimple,
-  consoleFont,
-  setConsoleFont,
-  editorFont,
-  setEditorFont,
   consoleFontSize,
   setConsoleFontSize,
 }: SettingsDialogProps) {
@@ -245,7 +241,7 @@ export function SettingsDialog({
                 </div>
               </div>
 
-              <div className="flex items-center justify-between borde-2 border-b py-2 bg-card ">
+              <div className="flex items-center justify-between borde-2 border-b py-2  bg-card ">
                 <div>
                   <div className="text-sm font-medium">Modo estricto</div>
                   <div className="text-xs text-muted-foreground">
@@ -253,6 +249,16 @@ export function SettingsDialog({
                   </div>
                 </div>
                 <Switch checked={strictMode} onCheckedChange={setStrictMode} />
+              </div>
+
+              <div className="flex items-center justify-between borde-2 border-b py-2 bg-card ">
+                <div>
+                  <div className="text-sm font-medium">Tipado fuerte</div>
+                  <div className="text-xs text-muted-foreground">
+                    Infiere el tipo de la primera asignación y valida en Leer
+                  </div>
+                </div>
+                <Switch checked={strongTyping} onCheckedChange={setStrongTyping} />
               </div>
 
             {/*   <div className="rounded-xl bg-card ">

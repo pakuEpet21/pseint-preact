@@ -104,6 +104,8 @@ export function PseintIDE() {
   const [fontSize, setFontSize] = useState(14)
   // Strict mode: requires Algoritmo/FinAlgoritmo and declared variables.
   const [strictMode, setStrictMode] = useState(true)
+  // Strong typing: infers type from first assignment and validates on Leer.
+  const [strongTyping, setStrongTyping] = useState(true)
   // Compact console mode: single line per entry, less spacing.
   const [consoleSimple, setConsoleSimple] = useState(false)
   // Font family used for console output.
@@ -158,6 +160,8 @@ export function PseintIDE() {
     }
     const savedStrict = localStorage.getItem("pseint:strictMode")
     if (savedStrict) setStrictMode(savedStrict === "true")
+    const savedStrongTyping = localStorage.getItem("pseint:strongTyping")
+    if (savedStrongTyping) setStrongTyping(savedStrongTyping === "true")
     const savedConsoleSimple = localStorage.getItem("pseint:consoleSimple")
     if (savedConsoleSimple) setConsoleSimple(savedConsoleSimple === "true")
     const savedConsoleFont = localStorage.getItem("pseint:consoleFont")
@@ -188,6 +192,11 @@ export function PseintIDE() {
   useEffect(() => {
     localStorage.setItem("pseint:strictMode", String(strictMode))
   }, [strictMode])
+
+  // Persist strong typing mode.
+  useEffect(() => {
+    localStorage.setItem("pseint:strongTyping", String(strongTyping))
+  }, [strongTyping])
 
   // Persist console simple mode.
   useEffect(() => {
@@ -564,6 +573,7 @@ export function PseintIDE() {
         signal: abortRef.current,
         onVariables: setVars,
         strictMode,
+        strongTyping,
         debug,
         onStep,
       })
@@ -760,12 +770,10 @@ export function PseintIDE() {
             setFontSize={setFontSize}
             strictMode={strictMode}
             setStrictMode={setStrictMode}
+            strongTyping={strongTyping}
+            setStrongTyping={setStrongTyping}
             consoleSimple={consoleSimple}
             setConsoleSimple={setConsoleSimple}
-            consoleFont={consoleFont}
-            setConsoleFont={setConsoleFont}
-            editorFont={editorFont}
-            setEditorFont={setEditorFont}
             consoleFontSize={consoleFontSize}
             setConsoleFontSize={setConsoleFontSize}
           />
