@@ -72,15 +72,18 @@ function ThemeCard({
 function Switch({
   checked,
   onCheckedChange,
+  label,
 }: {
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
+  label: string;
 }) {
   return (
     <button
       type="button"
       role="switch"
       aria-checked={checked}
+      aria-label={label}
       onClick={() => onCheckedChange(!checked)}
       className={cn(
         "relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors",
@@ -243,7 +246,7 @@ export function SettingsDialog({
                     Declara variables antes de usarlas
                   </div>
                 </div>
-                <Switch checked={strictMode} onCheckedChange={setStrictMode} />
+                <Switch checked={strictMode} onCheckedChange={setStrictMode} label="Modo estricto" />
               </div>
 
               <div className="flex items-center justify-between borde-2 border-b py-2 bg-card ">
@@ -256,6 +259,7 @@ export function SettingsDialog({
                 <Switch
                   checked={strongTyping}
                   onCheckedChange={setStrongTyping}
+                  label="Tipado fuerte"
                 />
               </div>
 
@@ -293,6 +297,7 @@ export function SettingsDialog({
                 <Switch
                   checked={consoleSimple}
                   onCheckedChange={setConsoleSimple}
+                  label="Consola minimalista"
                 />
               </div>
 

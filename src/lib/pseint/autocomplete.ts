@@ -17,6 +17,11 @@ export const AUTOCOMPLETE_ITEMS: AutocompleteItem[] = [
   { label: "Imprimir", snippet: "Imprimir ", category: "Entrada/Salida" },
   { label: "Leer", snippet: "Leer ", category: "Entrada/Salida" },
   {
+    label: "Ingresar",
+    snippet: "Ingresar ",
+    category: "Entrada/Salida",
+  },
+  {
     label: "Limpiar Pantalla",
     snippet: "Limpiar Pantalla",
     category: "Entrada/Salida",
@@ -168,6 +173,7 @@ export const AUTOCOMPLETE_ITEMS: AutocompleteItem[] = [
     snippet: "Esperar 1 Segundos",
     category: "Control",
   },
+  { label: "Segundos", snippet: "Segundos", category: "Control" },
 ];
 
 export function matchAutocomplete(prefix: string): AutocompleteItem[] {

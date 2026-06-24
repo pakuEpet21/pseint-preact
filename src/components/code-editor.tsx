@@ -57,7 +57,9 @@ const KEYWORDS = [
   "Limpiar",
   "Pantalla",
   "Esperar",
+  "Segundos",
   "Tecla",
+  "Ingresar",
 ];
 const KW_SET = new Set(KEYWORDS.map((k) => k.toLowerCase()));
 

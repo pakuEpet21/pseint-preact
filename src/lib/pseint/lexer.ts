@@ -24,6 +24,7 @@ export const KEYWORDS = new Set([
   "imprimir",
   "mostrar",
   "leer",
+  "ingresar",
   "definir",
   "dimension",
   "dimensionar",

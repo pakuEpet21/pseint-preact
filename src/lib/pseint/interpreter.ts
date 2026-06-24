@@ -263,6 +263,7 @@ class Parser {
         case "mostrar":
           return this.parseEscribir();
         case "leer":
+        case "ingresar":
           return this.parseLeer();
         case "definir":
           return this.parseDefinir();

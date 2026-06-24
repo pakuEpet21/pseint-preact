@@ -23,7 +23,6 @@ import {
   Bug,
   StepForward,
   Trash,
-  PanelBottomOpen,
   PanelTopOpen,
 } from "lucide-react";
 import { CodeEditor, type CodeEditorHandle } from "@/components/code-editor";
