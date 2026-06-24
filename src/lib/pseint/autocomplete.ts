@@ -26,10 +26,14 @@ export const AUTOCOMPLETE_ITEMS: AutocompleteItem[] = [
   { label: "Definir", snippet: "Definir ", category: "Variables" },
   { label: "Dimension", snippet: "Dimension ", category: "Variables" },
   { label: "Dimensionar", snippet: "Dimensionar ", category: "Variables" },
-  { label: "Como Entero", snippet: " Como Entero", category: "Tipos" },
-  { label: "Como Real", snippet: " Como Real", category: "Tipos" },
-  { label: "Como Logico", snippet: " Como Logico", category: "Tipos" },
-  { label: "Como Caracter", snippet: " Como Caracter", category: "Tipos" },
+  { label: "Como Entero", snippet: "Como Entero", category: "Tipos" },
+  { label: "Como Real", snippet: "Como Real", category: "Tipos" },
+  { label: "Como Logico", snippet: "Como Logico", category: "Tipos" },
+  { label: "Como Caracter", snippet: "Como Caracter", category: "Tipos" },
+  { label: "Caracter", snippet: "Caracter", category: "Tipos" },
+  { label: "Logico", snippet: "Logico", category: "Tipos" },
+  { label: "Entero", snippet: "Entero", category: "Tipos" },
+  { label: "Real", snippet: "Real", category: "Tipos" },
 
   // Condicionales
   { label: "Si", snippet: "Si ", category: "Condicionales" },
