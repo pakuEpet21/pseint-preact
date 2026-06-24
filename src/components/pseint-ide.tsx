@@ -23,8 +23,13 @@ import {
   Bug,
   StepForward,
   Trash,
-  PanelBottomOpen,
   PanelTopOpen,
+  Link2,
+  Check,
+  Share,
+  Share2,
+  ChartNoAxesColumn,
+  ChartNoAxesGantt,
 } from "lucide-react";
 import { CodeEditor, type CodeEditorHandle } from "@/components/code-editor";
 import { SnippetPanel } from "@/components/snippet-panel";
@@ -52,6 +57,11 @@ import {
 import { formatPseint } from "@/lib/pseint/format";
 import { STARTER_CODE } from "@/lib/pseint/snippets";
 import { loadWorkspace, saveWorkspace } from "@/lib/pseint/storage";
+import {
+  compressToUrlSafeBase64,
+  decompressFromUrlSafeBase64,
+  buildShareUrl,
+} from "@/lib/pseint/share";
 
 interface FileTab {
   id: string;
@@ -119,6 +129,11 @@ export function PseintIDE() {
   const [consoleFontSize, setConsoleFontSize] = useState(14);
   // Settings modal visibility.
   const [settingsOpen, setSettingsOpen] = useState(false);
+  // Share dialog
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareUrl, setShareUrl] = useState("");
+  const [shareCopied, setShareCopied] = useState(false);
+  const shareTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [tabPendingClose, setTabPendingClose] = useState<FileTab | null>(null);
   const [editingTabId, setEditingTabId] = useState<string | null>(null);
   const [editingTabName, setEditingTabName] = useState("");
@@ -237,6 +252,35 @@ export function PseintIDE() {
 
   // Restore workspace from localStorage on first mount
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const codeParam = params.get("code");
+    if (codeParam) {
+      // Load code from shared URL instead of localStorage
+      decompressFromUrlSafeBase64(codeParam)
+        .then((code) => {
+          const tab: FileTab = {
+            id: newId(),
+            name: "compartido.psc",
+            content: code,
+          };
+          setTabs([tab]);
+          setActiveId(tab.id);
+          setLines([{ type: "info", text: "Código cargado desde enlace compartido." }]);
+          // Clean URL without reloading
+          window.history.replaceState({}, "", window.location.pathname);
+        })
+        .catch(() => {
+          // Invalid or corrupted link — fall back to localStorage
+          restoreLocalStorage();
+        });
+    } else {
+      restoreLocalStorage();
+    }
+    hydratedRef.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const restoreLocalStorage = () => {
     const saved = loadWorkspace();
     if (saved && saved.tabs.length) {
       // ensure id counter does not collide with restored ids
@@ -257,9 +301,7 @@ export function PseintIDE() {
         },
       ]);
     }
-    hydratedRef.current = true;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  };
 
   // Debounced auto-save to localStorage whenever tabs or active tab change
   useEffect(() => {
@@ -504,6 +546,28 @@ export function PseintIDE() {
     URL.revokeObjectURL(url);
   };
 
+  const shareCode = async () => {
+    setShareCopied(false);
+    const compressed = await compressToUrlSafeBase64(active.content);
+    const url = buildShareUrl(compressed);
+    setShareUrl(url);
+    setShareOpen(true);
+  };
+
+  const copyShareUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setShareCopied(true);
+      if (shareTimerRef.current) clearTimeout(shareTimerRef.current);
+      shareTimerRef.current = setTimeout(() => {
+        setShareCopied(false);
+        setShareOpen(false);
+      }, 2000);
+    } catch {
+      // Fallback: select the input
+    }
+  };
+
   const appendLine = (line: ConsoleLine) => {
     if (line.type === "info" && line.text === "\u0001CLEAR\u0001") {
       setLines([]);
@@ -712,6 +776,10 @@ export function PseintIDE() {
                 <FolderOpen className="mr-2 size-4" />
                 Abrir archivo
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => void shareCode()}>
+                <Share2 className="mr-2 size-4" />
+                Compartir código
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => downloadFile("psc")}>
                 <Download className="mr-2 size-4" />
@@ -740,6 +808,17 @@ export function PseintIDE() {
               </button>
             </TooltipTrigger>
             <TooltipContent side="bottom">Abrir archivo</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => void shareCode()}
+                className="hidden cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent md:flex"
+              >
+                <Share2 className="size-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Compartir código</TooltipContent>
           </Tooltip>
           <DropdownMenu>
             <Tooltip>
@@ -921,7 +1000,7 @@ export function PseintIDE() {
                   onClick={formatActiveTab}
                   className="shrink-0 cursor-pointer rounded-md  px-2.5 py-2 text-primary transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  <Sparkles className="size-4" />
+                  <ChartNoAxesGantt className="size-4" />
                 </button>
               </TooltipTrigger>
               <TooltipContent side="bottom">Formatear</TooltipContent>
@@ -1166,6 +1245,77 @@ export function PseintIDE() {
                 className="rounded-md bg-destructive px-3 py-2 text-sm font-medium text-white transition-colors hover:opacity-90"
               >
                 Cerrar archivo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {shareOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 px-4 backdrop-blur-sm">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="share-title"
+            className="w-full max-w-lg rounded-2xl border border-border bg-card shadow-2xl"
+          >
+            <div className="flex items-start gap-3 border-b border-border px-5 py-4">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/12 text-primary">
+                <Link2 className="size-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h2 id="share-title" className="text-base font-semibold">
+                  Código compartido
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Copiá el enlace y compartilo. Solo quienes tengan el enlace
+                  pueden ver el código.
+                </p>
+              </div>
+            </div>
+
+            <div className="px-5 py-4">
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  readOnly
+                  value={shareUrl}
+                  className="flex-1 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground outline-none focus:ring-2 focus:ring-ring"
+                />
+                <button
+                  type="button"
+                  onClick={copyShareUrl}
+                  className={`flex shrink-0 cursor-pointer items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                    shareCopied
+                      ? "bg-green-600 text-white"
+                      : "bg-primary text-primary-foreground hover:opacity-90"
+                  }`}
+                >
+                  {shareCopied ? (
+                    <>
+                      <Check className="size-4" />
+                      Copiado
+                    </>
+                  ) : (
+                    <>
+                      <Link2 className="size-4" />
+                      Copiar
+                    </>
+                  )}
+                </button>
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                El código se comprimió con gzip para generar un enlace corto.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end border-t border-border px-5 py-4">
+              <button
+                type="button"
+                onClick={() => setShareOpen(false)}
+                className="rounded-md border border-border px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              >
+                Cerrar
               </button>
             </div>
           </div>
