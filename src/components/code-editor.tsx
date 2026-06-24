@@ -452,7 +452,7 @@ export const CodeEditor = forwardRef<CodeEditorHandle, Props>(
         <div
           ref={gutterRef}
           aria-hidden="true"
-          className="select-none overflow-hidden border-r border-border bg-card py-3 text-right text-muted-foreground"
+          className={` "select-none overflow-hidden border-r w-8 border-border bg-card py-3 text-right text-muted-foreground"`}
           style={{ minWidth: "2rem" }}
         >
           {lines.map((_, idx) => {
@@ -462,13 +462,10 @@ export const CodeEditor = forwardRef<CodeEditorHandle, Props>(
             return (
               <div
                 key={idx}
-                className={`relative px-3 ${isHighlight ? "bg-primary/20 text-primary border-primary border-r-2" : ""} ${isError ? "text-destructive font-semibold" : ""}`}
+                className={`relative  ${isHighlight ? "bg-primary/20 text-primary border-primary border-r-2" : ""} ${isError ? "text-destructive font-semibold" : ""}`}
                 style={{ height: `${lh}px` }}
               >
-                <div className="flex gap-2 flex-row items-center justify-end">
-                  {isError && (
-                    <span className="size-1.5 rounded-full bg-destructive" />
-                  )}
+                <div className="flex gap-1 flex-row items-center justify-center ">
                   {lineNum}
                 </div>
               </div>
