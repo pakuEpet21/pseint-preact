@@ -24,6 +24,8 @@ import {
   StepForward,
   Trash,
   PanelTopOpen,
+  Trophy,
+  Share2,
 } from "lucide-react";
 import { CodeEditor, type CodeEditorHandle } from "@/components/code-editor";
 import { SnippetPanel } from "@/components/snippet-panel";
@@ -31,6 +33,8 @@ import { ConsolePanel } from "@/components/console-panel";
 import { VariableInspector } from "@/components/variable-inspector";
 import { FlowchartPanel } from "@/components/flowchart-panel";
 import { SettingsDialog } from "@/components/settings-dialog";
+import { ChallengesDialog } from "@/components/challenges-dialog";
+import { ChallengeBanner } from "@/components/challenge-banner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,12 +54,26 @@ import {
 } from "@/lib/pseint/interpreter";
 import { formatPseint } from "@/lib/pseint/format";
 import { STARTER_CODE } from "@/lib/pseint/snippets";
-import { loadWorkspace, saveWorkspace } from "@/lib/pseint/storage";
+import {
+  loadWorkspace,
+  saveWorkspace,
+  loadChallengeState,
+  saveChallengeState,
+  type ChallengeStore,
+} from "@/lib/pseint/storage";
+import {
+  challenges,
+  getChallengeById,
+  validateChallenge as validateChallengeAsync,
+  type ChallengeData,
+} from "@/lib/pseint/challenges";
 
 interface FileTab {
   id: string;
   name: string;
   content: string;
+  isChallenge?: boolean;
+  challengeId?: string;
 }
 
 let idCounter = 1;
@@ -130,6 +148,12 @@ export function PseintIDE() {
   const [debugPaused, setDebugPaused] = useState(false);
   const [debugLine, setDebugLine] = useState<number | null>(null);
   const [debugVars, setDebugVars] = useState<VarSnapshot[]>([]);
+  // Challenge state
+  const [challengeState, setChallengeState] = useState<ChallengeStore>({});
+  const [challengesOpen, setChallengesOpen] = useState(false);
+  // Refs for capturing challenge execution results (avoid stale state)
+  const challengeOutputRef = useRef<ConsoleLine[]>([]);
+  const varsRef = useRef<Record<string, string>>({});
   const draggingRef = useRef(false);
   const splitRef = useRef<HTMLDivElement>(null);
   const inputResolverRef = useRef<((v: string) => void) | null>(null);
@@ -228,6 +252,14 @@ export function PseintIDE() {
     localStorage.setItem("pseint:consoleFontSize", String(consoleFontSize));
   }, [consoleFontSize]);
 
+  // Load challenge state on mount.
+  useEffect(() => {
+    const saved = loadChallengeState();
+    if (Object.keys(saved).length > 0) {
+      setChallengeState(saved);
+    }
+  }, []);
+
   useEffect(() => {
     if (!editingTabId || !renameInputRef.current) return;
     renameInputRef.current.focus();
@@ -266,7 +298,9 @@ export function PseintIDE() {
     setSaveState("saving");
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
-      saveWorkspace({ tabs, activeId });
+      // Filter out challenge tabs from workspace persistence
+      const workspaceTabs = tabs.filter((t) => !t.isChallenge);
+      saveWorkspace({ tabs: workspaceTabs, activeId });
       setSaveState("saved");
       setTimeout(() => setSaveState("idle"), 1500);
     }, 600);
@@ -422,6 +456,45 @@ export function PseintIDE() {
     setActiveId(tab.id);
   };
 
+  // Challenge functions
+  const openChallengeTab = (challenge: ChallengeData) => {
+    const tab: FileTab = {
+      id: newId(),
+      name: `${challenge.title}.psc`,
+      content: challenge.starterCode,
+      isChallenge: true,
+      challengeId: challenge.id,
+    };
+    setTabs((prev) => [...prev, tab]);
+    setActiveId(tab.id);
+    setChallengesOpen(false);
+  };
+
+  const handleSelectChallenge = (challenge: ChallengeData) => {
+    // Check if this challenge is already open
+    const existing = tabs.find((t) => t.challengeId === challenge.id);
+    if (existing) {
+      setActiveId(existing.id);
+    } else {
+      openChallengeTab(challenge);
+    }
+  };
+
+  const handleResetChallenge = (challengeId: string) => {
+    const challenge = getChallengeById(challengeId);
+    if (!challenge) return;
+    openChallengeTab(challenge);
+  };
+
+  const completeChallenge = (challengeId: string) => {
+    const updated: ChallengeStore = {
+      ...challengeState,
+      [challengeId]: { completed: true, completedAt: Date.now() },
+    };
+    setChallengeState(updated);
+    saveChallengeState(updated);
+  };
+
   const requestCloseTab = (id: string, e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     const tab = tabs.find((t) => t.id === id);
@@ -503,6 +576,65 @@ export function PseintIDE() {
     URL.revokeObjectURL(url);
   };
 
+  // Comprimir texto usando Compression Streams API (gzip)
+  const compress = async (text: string): Promise<string> => {
+    const bytes = new TextEncoder().encode(text);
+    const cs = new CompressionStream("gzip");
+    const writer = cs.writable.getWriter();
+    writer.write(bytes);
+    writer.close();
+    const buf = await new Response(cs.readable).arrayBuffer();
+    return btoa(String.fromCharCode(...new Uint8Array(buf)));
+  };
+
+  // Descomprimir texto
+  const decompress = async (encoded: string): Promise<string> => {
+    const binary = atob(encoded);
+    const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+    const cs = new DecompressionStream("gzip");
+    const writer = cs.writable.getWriter();
+    writer.write(bytes);
+    writer.close();
+    const buf = await new Response(cs.readable).arrayBuffer();
+    return new TextDecoder().decode(buf);
+  };
+
+  // Compartir código: comprime y copia URL al clipboard
+  const shareCode = async () => {
+    try {
+      const encoded = await compress(active.content);
+      const url = `${window.location.origin}${window.location.pathname}?c=${encoded}`;
+      await navigator.clipboard.writeText(url);
+      // Feedback visual breve
+      setSaveState("saved");
+      setTimeout(() => setSaveState("idle"), 1500);
+    } catch {
+      // Fallback: copiar solo el código
+      await navigator.clipboard.writeText(active.content);
+    }
+  };
+
+  // Leer código de URL al montar (solo si hay ?c=)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const encoded = params.get("c");
+    if (encoded) {
+      decompress(encoded)
+        .then((code) => {
+          const id = newId();
+          const name = "compartido.psc";
+          setTabs((prev) => [...prev, { id, name, content: code }]);
+          setActiveId(id);
+          // Limpiar URL sin recargar
+          window.history.replaceState({}, "", window.location.pathname);
+        })
+        .catch(() => {
+          // Código inválido, ignorar
+        });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const appendLine = (line: ConsoleLine) => {
     if (line.type === "info" && line.text === "\u0001CLEAR\u0001") {
       setLines([]);
@@ -570,26 +702,84 @@ export function PseintIDE() {
     setRunning(true);
     abortRef.current = { aborted: false };
     clearDebugState();
+
+    // Reset challenge output/vars capture
+    challengeOutputRef.current = [];
+    varsRef.current = {};
+
+    // Check if this is a challenge tab
+    const isChallengeTab = active.isChallenge && active.challengeId;
+    const challenge = isChallengeTab ? getChallengeById(active.challengeId!) : undefined;
+
     if (debug) {
       setDebugActive(true);
       debugControllerRef.current = { active: true, continueMode: false };
     }
+
     try {
-      await runPseint(active.content, {
-        onOutput: (line) => {
-          appendLine(line);
-          if (line.line && (line.type === "error" || line.type === "warning")) {
-            setErrorLines((prev) => Array.from(new Set([...prev, line.line!])));
+      // ── CHALLENGE: run all test cases ──────────────────────────
+      if (challenge) {
+        appendLine({
+          type: "info",
+          text: `🔍 Corriendo ${challenge.testCases.length} pruebas...`,
+        });
+
+        const result = await validateChallengeAsync(
+          challenge,
+          active.content,
+        );
+
+        // Show result per test case
+        for (const r of result.results) {
+          const expected = challenge.testCases.find((t) => t.input === r.input)?.expectedOutput ?? "";
+          if (r.passed) {
+            appendLine({
+              type: "info",
+              text: `✅ Prueba "${r.input}" | Obtuviste: "${r.output}" | Esperado: "${expected}"`,
+            });
+          } else {
+            appendLine({
+              type: "error",
+              text: `❌ Prueba "${r.input}" | Obtuviste: "${r.output}" | Esperado: "${expected}"`,
+            });
           }
-        },
-        requestInput,
-        signal: abortRef.current,
-        onVariables: setVars,
-        strictMode,
-        strongTyping,
-        debug,
-        onStep,
-      });
+        }
+
+        if (result.passed === result.total) {
+          appendLine({
+            type: "info",
+            text: `🎉 ¡Desafío completado! (${result.passed}/${result.total} pruebas)`,
+          });
+          completeChallenge(challenge.id);
+        } else {
+          appendLine({
+            type: "info",
+            text: `❌ Incorrecto. ${result.passed}/${result.total} pruebas pasaron.`,
+          });
+          appendLine({
+            type: "info",
+            text: `💡 Pista: ${challenge.hint}`,
+          });
+        }
+      }
+      // ── NORMAL: run user's code ───────────────────────────────
+      else {
+        await runPseint(active.content, {
+          onOutput: (line) => {
+            appendLine(line);
+            if (line.line && (line.type === "error" || line.type === "warning")) {
+              setErrorLines((prev) => Array.from(new Set([...prev, line.line!])));
+            }
+          },
+          requestInput,
+          signal: abortRef.current,
+          onVariables: setVars,
+          strictMode,
+          strongTyping,
+          debug,
+          onStep,
+        });
+      }
     } finally {
       appendLine({ type: "info", text: "--- Ejecución finalizada ---" });
       setRunning(false);
@@ -696,7 +886,7 @@ export function PseintIDE() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {/* Mobile: single collapsible "+" menu for Abrir / Descargar / Configurar */}
+          {/* Mobile: centered modal dropdown */}
           <DropdownMenu>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -706,7 +896,7 @@ export function PseintIDE() {
               </TooltipTrigger>
               <TooltipContent side="bottom">Más opciones</TooltipContent>
             </Tooltip>
-            <DropdownMenuContent side="bottom" centerScreen className="w-64">
+            <DropdownMenuContent centerScreen side="bottom" align="center" className="w-72">
               <DropdownMenuItem onClick={openFile}>
                 <FolderOpen className="mr-2 size-4" />
                 Abrir archivo
@@ -720,6 +910,10 @@ export function PseintIDE() {
                 <Download className="mr-2 size-4" />
                 Descargar (.txt)
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={shareCode}>
+                <Share2 className="mr-2 size-4" />
+                Compartir
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
                 <Settings className="mr-2 size-4" />
@@ -728,52 +922,41 @@ export function PseintIDE() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Desktop: separate buttons (md: and up) */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={openFile}
-                className="hidden cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent md:flex"
-              >
-                <FolderOpen className="size-4" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">Abrir archivo</TooltipContent>
-          </Tooltip>
+          {/* Desktop: regular anchored dropdown */}
           <DropdownMenu>
             <Tooltip>
               <TooltipTrigger asChild>
                 <DropdownMenuTrigger className="hidden cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:flex">
-                  <Download className="size-4" />
+                  <Plus className="size-4" />
                 </DropdownMenuTrigger>
               </TooltipTrigger>
-              <TooltipContent side="bottom">Descargar</TooltipContent>
+              <TooltipContent side="bottom">Más opciones</TooltipContent>
             </Tooltip>
-            <DropdownMenuContent centerScreen className="w-56">
-              <div className="px-2 py-1.5 text-sm font-medium">
-                Descargar como
-              </div>
+            <DropdownMenuContent side="bottom" align="end" className="w-64">
+              <DropdownMenuItem onClick={openFile}>
+                <FolderOpen className="mr-2 size-4" />
+                Abrir archivo
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => downloadFile("psc")}>
-                Archivo PSeInt (.psc)
+                <Download className="mr-2 size-4" />
+                Descargar (.psc)
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => downloadFile("txt")}>
-                Documento de texto (.txt)
+                <Download className="mr-2 size-4" />
+                Descargar (.txt)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={shareCode}>
+                <Share2 className="mr-2 size-4" />
+                Compartir
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
+                <Settings className="mr-2 size-4" />
+                Configuración
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                onClick={() => setSettingsOpen(true)}
-                className="hidden cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:flex"
-              >
-                <Settings className="size-4" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">Configuración</TooltipContent>
-          </Tooltip>
           <SettingsDialog
             open={settingsOpen}
             onOpenChange={setSettingsOpen}
@@ -789,6 +972,27 @@ export function PseintIDE() {
             setConsoleSimple={setConsoleSimple}
             consoleFontSize={consoleFontSize}
             setConsoleFontSize={setConsoleFontSize}
+          />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={() => setChallengesOpen(true)}
+                className="flex cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-label="Desafíos"
+              >
+                <Trophy className="size-4" />
+                <span className="hidden md:flex font-bold">Desafíos</span>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Desafíos</TooltipContent>
+          </Tooltip>
+          <ChallengesDialog
+            open={challengesOpen}
+            onOpenChange={setChallengesOpen}
+            challengeState={challengeState}
+            onSelectChallenge={handleSelectChallenge}
+            onResetChallenge={handleResetChallenge}
           />
 
           <button
@@ -849,6 +1053,15 @@ export function PseintIDE() {
 
         {/* Left: editor */}
         <section className="flex min-h-0 flex-1 flex-col border-b border-border lg:border-b-0">
+          {/* Challenge banner */}
+          {active.isChallenge && active.challengeId && (
+            <ChallengeBanner
+              challenge={
+                getChallengeById(active.challengeId) ?? challenges[0]
+              }
+              onOpenChallenges={() => setChallengesOpen(true)}
+            />
+          )}
           {/* Tabs */}
           <div className="flex items-center border-b border-border bg-background">
             <div className="flex flex-1 items-center overflow-x-auto">
@@ -857,7 +1070,7 @@ export function PseintIDE() {
                   key={t.id}
                   onClick={() => setActiveId(t.id)}
                   onDblClick={() => renameTab(t.id)}
-                  className={`group flex shrink-0 cursor-pointer items-center gap-2 border-r border-border px-3 py-2 text-sm transition-colors ${
+                  className={`group flex shrink-0 cursor-pointer items-center gap-1 border-r border-border px-2 py-2 text-sm transition-colors ${
                     t.id === activeId
                       ? "bg-card text-foreground"
                       : "text-muted-foreground hover:bg-accent/50"
@@ -885,7 +1098,7 @@ export function PseintIDE() {
                           cancelRenameTab();
                         }
                       }}
-                      className="min-w-24 rounded-md border border-border bg-background px-2 py-1 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+                      className="min-w-24 rounded-md border border-border bg-background px-1 py-1 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
                     />
                   ) : (
                     <span className="max-w-40 truncate">
@@ -894,7 +1107,7 @@ export function PseintIDE() {
                   )}
                   <button
                     onClick={(e) => requestCloseTab(t.id, e)}
-                    className="cursor-pointer rounded p-0.5 md:opacity-0 transition-opacity hover:bg-accent group-hover:opacity-100"
+                    className="cursor-pointer rounded  md:opacity-0 transition-opacity hover:bg-accent group-hover:opacity-100"
                     aria-label={`Cerrar ${t.name}`}
                   >
                     <X className="size-3.5" />
