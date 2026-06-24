@@ -212,9 +212,6 @@ export function SettingsDialog({
               <div className="flex items-center justify-between borde-2 border-b py-2  bg-card ">
                 <div>
                   <div className="text-sm font-medium">Tamaño de fuente</div>
-                  <div className="text-xs text-muted-foreground">
-                    Ajusta el tamaño del editor de código
-                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
@@ -243,7 +240,7 @@ export function SettingsDialog({
                 <div>
                   <div className="text-sm font-medium">Modo estricto</div>
                   <div className="text-xs text-muted-foreground">
-                    Requiere Algoritmo/FinAlgoritmo y variables definidas
+                    Declara variables antes de usarlas
                   </div>
                 </div>
                 <Switch checked={strictMode} onCheckedChange={setStrictMode} />
@@ -253,7 +250,7 @@ export function SettingsDialog({
                 <div>
                   <div className="text-sm font-medium">Tipado fuerte</div>
                   <div className="text-xs text-muted-foreground">
-                    Infiere el tipo de la primera asignación y valida en Leer
+                    Infiere el tipo en la primera asignación
                   </div>
                 </div>
                 <Switch
@@ -288,9 +285,9 @@ export function SettingsDialog({
             <Section title="Consola">
               <div className="flex items-center justify-between  border-b py-2 bg-card">
                 <div>
-                  <div className="text-sm font-medium">Modo simple</div>
+                  <div className="text-sm font-medium">Minimalista</div>
                   <div className="text-xs text-muted-foreground">
-                    Línea por línea, sin tanto espaciado
+                    Consola sin colores ni bordes, solo texto
                   </div>
                 </div>
                 <Switch
@@ -324,11 +321,9 @@ export function SettingsDialog({
               <div className="flex items-center justify-between rounded-xl bg-card ">
                 <div>
                   <div className="text-sm font-medium">
-                    Tamaño de fuente de la consola
+                    Tamaño de fuente
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    Ajusta el tamaño de la salida de la consola
-                  </div>
+             
                 </div>
                 <div className="flex items-center gap-2">
                   <button
