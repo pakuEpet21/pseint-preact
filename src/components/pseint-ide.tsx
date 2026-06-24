@@ -1,1040 +1,317 @@
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
-import type { MouseEvent, ChangeEvent, CSSProperties } from "preact/compat";
-import { flushSync } from "react-dom";
+import type { ChangeEvent } from "preact/compat";
 
-import {
-  Play,
-  Square,
-  Download,
-  FolderOpen,
-  Plus,
-  X,
-  FileCode2,
-  PanelLeftOpen,
-  Settings,
-  Cloud,
-  CloudCheck,
-  Sparkles,
-  Undo2,
-  Redo2,
-  Eraser,
-  Workflow,
-  Terminal,
-  Bug,
-  StepForward,
-  Trash,
-  PanelTopOpen,
-  Trophy,
-  Share2,
-} from "lucide-react";
-import { CodeEditor, type CodeEditorHandle } from "@/components/code-editor";
+import { PanelLeftOpen } from "lucide-react";
+import { Toolbar } from "@/components/toolbar";
+import { FileTabBar } from "@/components/file-tab-bar";
+import { EditorPane } from "@/components/editor-pane";
+import { RightPanel } from "@/components/right-panel";
 import { SnippetPanel } from "@/components/snippet-panel";
-import { ConsolePanel } from "@/components/console-panel";
-import { VariableInspector } from "@/components/variable-inspector";
-import { FlowchartPanel } from "@/components/flowchart-panel";
 import { SettingsDialog } from "@/components/settings-dialog";
-import { ChallengesDialog } from "@/components/challenges-dialog";
-import { ChallengeBanner } from "@/components/challenge-banner";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
-  runPseint,
-  type ConsoleLine,
-  type VarSnapshot,
-} from "@/lib/pseint/interpreter";
+import { CloseConfirmDialog } from "@/components/close-confirm-dialog";
+import type { CodeEditorHandle } from "@/components/code-editor";
+import { useTabs } from "@/hooks/useTabs";
+import { useHistory } from "@/hooks/useHistory";
+import { useSettings } from "@/hooks/useSettings";
+import { useDebugger } from "@/hooks/useDebugger";
+import { useShare } from "@/hooks/useShare";
+import { useWorkspace } from "@/hooks/useWorkspace";
+import { useResizableSplit } from "@/hooks/useResizableSplit";
 import { formatPseint } from "@/lib/pseint/format";
-import { STARTER_CODE } from "@/lib/pseint/snippets";
-import {
-  loadWorkspace,
-  saveWorkspace,
-  loadChallengeState,
-  saveChallengeState,
-  type ChallengeStore,
-} from "@/lib/pseint/storage";
-import {
-  challenges,
-  getChallengeById,
-  validateChallenge as validateChallengeAsync,
-  type ChallengeData,
-} from "@/lib/pseint/challenges";
-
-interface FileTab {
-  id: string;
-  name: string;
-  content: string;
-  isChallenge?: boolean;
-  challengeId?: string;
-}
-
-let idCounter = 1;
-const newId = () => `f${idCounter++}`;
-const stripFileExtension = (name: string) =>
-  name.replace(/\.(psc|pseint|txt)$/i, "");
-
-type SaveState = "idle" | "saving" | "saved";
-
-interface Snapshot {
-  content: string;
-  cursor: number;
-}
-
-interface HistoryEntry {
-  past: Snapshot[];
-  future: Snapshot[];
-}
-
-interface DebugController {
-  active: boolean;
-  continueMode: boolean;
-  resume?: () => void;
-}
+import { downloadFile, readFileAsText, newId } from "@/lib/file-utils";
+import { loadWorkspace } from "@/lib/pseint/storage";
+import { getChallengeById, type ChallengeData } from "@/lib/pseint/challenges";
+import type { ConsoleLine } from "@/lib/pseint/interpreter";
 
 export function PseintIDE() {
-  const [tabs, setTabs] = useState<FileTab[]>([
-    { id: newId(), name: "ejemplo.psc", content: STARTER_CODE },
-  ]);
-  const [activeId, setActiveId] = useState(tabs[0].id);
-  const [lines, setLines] = useState<ConsoleLine[]>([]);
-  const [vars, setVars] = useState<VarSnapshot[]>([]);
-  const [running, setRunning] = useState(false);
-  const [waitingForInput, setWaitingForInput] = useState(false);
-  const [saveState, setSaveState] = useState<SaveState>("idle");
-  // Width of the right (console) panel as a percentage of the split, desktop only.
-  const [consolePct, setConsolePct] = useState(38);
-  // Toggle the operations (snippets) panel between editor and console.
   const [showOps, setShowOps] = useState(false);
-  // Right panel tab: console or flowchart.
-  const [rightTab, setRightTab] = useState<"console" | "flowchart">("console");
-  // Visual theme: "light", "dark" (default) or "dracula".
-  const [theme, setTheme] = useState<"light" | "dark" | "dracula">("dracula");
-  const [fontSize, setFontSize] = useState(14);
-  // Strict mode: requires Algoritmo/FinAlgoritmo and declared variables.
-  const [strictMode, setStrictMode] = useState(true);
-  // Strong typing: infers type from first assignment and validates on Leer.
-  const [strongTyping, setStrongTyping] = useState(true);
-  // Compact console mode: single line per entry, less spacing.
-  const [consoleSimple, setConsoleSimple] = useState(false);
-  // Font family used for console output.
-  const [consoleFont, setConsoleFont] = useState(
-    "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace",
-  );
-  // Font family used for the code editor.
-  const [editorFont, setEditorFont] = useState(
-    "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace",
-  );
-  // Font size used for console output.
-  const [consoleFontSize, setConsoleFontSize] = useState(14);
-  // Settings modal visibility.
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [tabPendingClose, setTabPendingClose] = useState<FileTab | null>(null);
-  const [editingTabId, setEditingTabId] = useState<string | null>(null);
-  const [editingTabName, setEditingTabName] = useState("");
-  const [errorLines, setErrorLines] = useState<number[]>([]);
-  const [hoveredVariable, setHoveredVariable] = useState<{
-    name: string;
-    line?: number;
-  } | null>(null);
-  const [debugActive, setDebugActive] = useState(false);
-  const [debugPaused, setDebugPaused] = useState(false);
-  const [debugLine, setDebugLine] = useState<number | null>(null);
-  const [debugVars, setDebugVars] = useState<VarSnapshot[]>([]);
-  // Challenge state
-  const [challengeState, setChallengeState] = useState<ChallengeStore>({});
   const [challengesOpen, setChallengesOpen] = useState(false);
-  // Refs for capturing challenge execution results (avoid stale state)
-  const challengeOutputRef = useRef<ConsoleLine[]>([]);
-  const varsRef = useRef<Record<string, string>>({});
-  const draggingRef = useRef(false);
-  const splitRef = useRef<HTMLDivElement>(null);
-  const inputResolverRef = useRef<((v: string) => void) | null>(null);
-  const abortRef = useRef<{ aborted: boolean }>({ aborted: false });
+  const [hoveredVariable, setHoveredVariable] = useState<{ name: string; line?: number } | null>(null);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const hydratedRef = useRef(false);
   const editorRef = useRef<CodeEditorHandle>(null);
-  const renameInputRef = useRef<HTMLInputElement>(null);
-  const debugControllerRef = useRef<DebugController>({
-    active: false,
-    continueMode: false,
+  const renameInputRef = useRef<HTMLInputElement>(null!);
+
+  const {
+    tabs,
+    activeTab,
+    activeId,
+    setActiveId,
+    addTab,
+    openTab,
+    updateTabContent,
+    renameTab,
+    saveRename,
+    cancelRename,
+    editingTabId,
+    editingTabName,
+    setEditingTabName,
+    tabPendingClose,
+    requestCloseTab,
+    confirmCloseTab,
+    cancelCloseTab,
+  } = useTabs();
+
+  const {
+    theme,
+    setTheme,
+    fontSize,
+    setFontSize,
+    strictMode,
+    setStrictMode,
+    strongTyping,
+    setStrongTyping,
+    consoleSimple,
+    setConsoleSimple,
+    consoleFont,
+    editorFont,
+    consoleFontSize,
+    setConsoleFontSize,
+    saveState,
+    setSaveState,
+  } = useSettings();
+
+  const {
+    running,
+    waitingForInput,
+    debugActive,
+    debugPaused,
+    debugLine,
+    debugVars,
+    lines,
+    vars,
+    errorLines,
+    _setLines,
+    _inputResolverRef,
+    _abortRef,
+    run,
+    stop,
+    step,
+    clearConsole,
+  } = useDebugger();
+
+  const {
+    consolePct,
+    setConsolePct,
+    startDrag,
+  } = useResizableSplit();
+
+  // History
+  const historyResult = useHistory(activeId);
+  const {
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    snapshotOnChange,
+  } = historyResult;
+
+  // Inject editor methods into history after mount
+  useEffect(() => {
+    const h = historyResult as typeof historyResult & {
+      _setCursorRef: (fn: () => number) => void;
+      _setSetCursorRef: (fn: (pos: number) => void) => void;
+      _setUpdateContentRef: (fn: (content: string) => void) => void;
+    };
+    h._setCursorRef(() => editorRef.current?.getCursorPosition() ?? 0);
+    h._setSetCursorRef((pos) => editorRef.current?.setCursorPosition(pos));
+    h._setUpdateContentRef((content) => updateTabContent(activeId, content));
   });
 
-  // History (undo/redo) per tab
-  const historiesRef = useRef<Record<string, HistoryEntry>>({});
-  const [, setHistoryVersion] = useState(0);
-  const prevStateRef = useRef<Record<string, Snapshot>>({});
-  const prevActiveIdRef = useRef(activeId);
-  const snapshotTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isUndoingRef = useRef(false);
+  const { shareCode, loadSharedCode } = useShare(setSaveState);
 
-  const active = tabs.find((t) => t.id === activeId) ?? tabs[0];
+  const {
+    challengeState,
+    restoreWorkspace,
+    autoSave,
+    hydrated,
+  } = useWorkspace(setSaveState);
 
-  // Load saved theme, font size and strict mode on mount.
+  // Auto-save on tab changes
   useEffect(() => {
-    const savedTheme = localStorage.getItem("pseint:theme");
-    if (
-      savedTheme === "light" ||
-      savedTheme === "dark" ||
-      savedTheme === "dracula"
-    )
-      setTheme(savedTheme);
-    const savedFont = localStorage.getItem("pseint:fontSize");
-    if (savedFont) {
-      const n = Number.parseInt(savedFont, 10);
-      if (!Number.isNaN(n) && n >= 10 && n <= 24) setFontSize(n);
-    }
-    const savedStrict = localStorage.getItem("pseint:strictMode");
-    if (savedStrict) setStrictMode(savedStrict === "true");
-    const savedStrongTyping = localStorage.getItem("pseint:strongTyping");
-    if (savedStrongTyping) setStrongTyping(savedStrongTyping === "true");
-    const savedConsoleSimple = localStorage.getItem("pseint:consoleSimple");
-    if (savedConsoleSimple) setConsoleSimple(savedConsoleSimple === "true");
-    const savedConsoleFont = localStorage.getItem("pseint:consoleFont");
-    if (savedConsoleFont) setConsoleFont(savedConsoleFont);
-    const savedEditorFont = localStorage.getItem("pseint:editorFont");
-    if (savedEditorFont) setEditorFont(savedEditorFont);
-    const savedConsoleFontSize = localStorage.getItem("pseint:consoleFontSize");
-    if (savedConsoleFontSize) {
-      const n = Number.parseInt(savedConsoleFontSize, 10);
-      if (!Number.isNaN(n) && n >= 10 && n <= 24) setConsoleFontSize(n);
-    }
-  }, []);
+    if (!hydrated.current) return;
+    autoSave(tabs, activeId);
+  }, [tabs, activeId, autoSave]);
 
-  // Apply the theme class to <html> and persist it.
-  useEffect(() => {
-    const root = document.documentElement;
-    root.classList.remove("dark", "dracula");
-    if (theme !== "light") root.classList.add(theme);
-    localStorage.setItem("pseint:theme", theme);
-  }, [theme]);
-
-  // Persist font size.
-  useEffect(() => {
-    localStorage.setItem("pseint:fontSize", String(fontSize));
-  }, [fontSize]);
-
-  // Persist strict mode.
-  useEffect(() => {
-    localStorage.setItem("pseint:strictMode", String(strictMode));
-  }, [strictMode]);
-
-  // Persist strong typing mode.
-  useEffect(() => {
-    localStorage.setItem("pseint:strongTyping", String(strongTyping));
-  }, [strongTyping]);
-
-  // Persist console simple mode.
-  useEffect(() => {
-    localStorage.setItem("pseint:consoleSimple", String(consoleSimple));
-  }, [consoleSimple]);
-
-  // Persist console font family.
-  useEffect(() => {
-    localStorage.setItem("pseint:consoleFont", consoleFont);
-  }, [consoleFont]);
-
-  // Persist editor font family.
-  useEffect(() => {
-    localStorage.setItem("pseint:editorFont", editorFont);
-  }, [editorFont]);
-
-  // Persist console font size.
-  useEffect(() => {
-    localStorage.setItem("pseint:consoleFontSize", String(consoleFontSize));
-  }, [consoleFontSize]);
-
-  // Load challenge state on mount.
-  useEffect(() => {
-    const saved = loadChallengeState();
-    if (Object.keys(saved).length > 0) {
-      setChallengeState(saved);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!editingTabId || !renameInputRef.current) return;
-    renameInputRef.current.focus();
-    renameInputRef.current.select();
-  }, [editingTabId]);
-
-  // Restore workspace from localStorage on first mount
+  // Restore workspace + shared code on mount
   useEffect(() => {
     const saved = loadWorkspace();
     if (saved && saved.tabs.length) {
-      // ensure id counter does not collide with restored ids
-      saved.tabs.forEach((t) => {
-        const n = Number.parseInt(t.id.replace(/\D/g, ""), 10);
-        if (!Number.isNaN(n) && n >= idCounter) idCounter = n + 1;
-      });
-      setTabs(saved.tabs);
-      setActiveId(
-        saved.tabs.some((t) => t.id === saved.activeId)
-          ? saved.activeId
-          : saved.tabs[0].id,
-      );
-      setLines([
-        {
-          type: "info",
-          text: "Se restauró tu trabajo guardado anteriormente.",
-        },
-      ]);
-    }
-    hydratedRef.current = true;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Debounced auto-save to localStorage whenever tabs or active tab change
-  useEffect(() => {
-    if (!hydratedRef.current) return;
-    setSaveState("saving");
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(() => {
-      // Filter out challenge tabs from workspace persistence
-      const workspaceTabs = tabs.filter((t) => !t.isChallenge);
-      saveWorkspace({ tabs: workspaceTabs, activeId });
-      setSaveState("saved");
-      setTimeout(() => setSaveState("idle"), 1500);
-    }, 600);
-    return () => {
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    };
-  }, [tabs, activeId]);
-
-  const updateActiveContent = useCallback(
-    (content: string) => {
-      if (debugActive) {
-        stop();
-      }
-      setTabs((prev) =>
-        prev.map((t) => (t.id === activeId ? { ...t, content } : t)),
-      );
-    },
-    [activeId, debugActive],
-  );
-
-  const bumpHistory = () => setHistoryVersion((v) => v + 1);
-
-  const getHistory = (id: string): HistoryEntry => {
-    return historiesRef.current[id] ?? { past: [], future: [] };
-  };
-
-  const pushToPast = (id: string, content: string, cursor: number) => {
-    const entry = getHistory(id);
-    const past = [...entry.past, { content, cursor }];
-    if (past.length > 100) past.shift();
-    historiesRef.current[id] = { past, future: [] };
-    bumpHistory();
-  };
-
-  const undo = useCallback(() => {
-    const entry = getHistory(activeId);
-    if (entry.past.length === 0) return;
-    const currentCursor = editorRef.current?.getCursorPosition() ?? 0;
-    const currentSnapshot = { content: active.content, cursor: currentCursor };
-    const previous = entry.past[entry.past.length - 1];
-    const newPast = entry.past.slice(0, -1);
-    historiesRef.current[activeId] = {
-      past: newPast,
-      future: [currentSnapshot, ...entry.future],
-    };
-    bumpHistory();
-    isUndoingRef.current = true;
-    updateActiveContent(previous.content);
-    editorRef.current?.setCursorPosition(previous.cursor);
-    prevStateRef.current[activeId] = {
-      content: previous.content,
-      cursor: previous.cursor,
-    };
-  }, [activeId, active.content]);
-
-  const redo = useCallback(() => {
-    const entry = getHistory(activeId);
-    if (entry.future.length === 0) return;
-    const currentCursor = editorRef.current?.getCursorPosition() ?? 0;
-    const currentSnapshot = { content: active.content, cursor: currentCursor };
-    const next = entry.future[0];
-    const newFuture = entry.future.slice(1);
-    historiesRef.current[activeId] = {
-      past: [...entry.past, currentSnapshot],
-      future: newFuture,
-    };
-    bumpHistory();
-    isUndoingRef.current = true;
-    updateActiveContent(next.content);
-    editorRef.current?.setCursorPosition(next.cursor);
-    prevStateRef.current[activeId] = {
-      content: next.content,
-      cursor: next.cursor,
-    };
-  }, [activeId, active.content]);
-
-  const canUndo = getHistory(activeId).past.length > 0;
-  const canRedo = getHistory(activeId).future.length > 0;
-
-  // Snapshot history on content changes (grouped by 400ms debounce)
-  useEffect(() => {
-    if (isUndoingRef.current) {
-      isUndoingRef.current = false;
-      prevActiveIdRef.current = activeId;
-      return;
-    }
-
-    if (prevActiveIdRef.current !== activeId) {
-      // Tab switch: initialize prevState if needed
-      if (!(activeId in prevStateRef.current)) {
-        prevStateRef.current[activeId] = {
-          content: active.content,
-          cursor: 0,
-        };
-      }
-      prevActiveIdRef.current = activeId;
-      return;
-    }
-
-    const prev = prevStateRef.current[activeId];
-    if (!prev) {
-      prevStateRef.current[activeId] = {
-        content: active.content,
-        cursor: editorRef.current?.getCursorPosition() ?? 0,
-      };
-      return;
-    }
-    if (prev.content === active.content) return;
-
-    if (!snapshotTimerRef.current) {
-      pushToPast(activeId, prev.content, prev.cursor);
-    }
-
-    if (snapshotTimerRef.current) clearTimeout(snapshotTimerRef.current);
-    snapshotTimerRef.current = setTimeout(() => {
-      snapshotTimerRef.current = null;
-    }, 400);
-
-    prevStateRef.current[activeId] = {
-      content: active.content,
-      cursor: editorRef.current?.getCursorPosition() ?? 0,
-    };
-  }, [active.content, activeId]);
-
-  const insertSnippet = useCallback(
-    (code: string) => {
-      if (editorRef.current) {
-        const sep =
-          active.content.length && !active.content.endsWith("\n") ? "\n" : "";
-        editorRef.current.insertAtCursor(sep + code + "\n");
-      } else {
-        setTabs((prev) =>
-          prev.map((t) => {
-            if (t.id !== activeId) return t;
-            const sep =
-              t.content.length && !t.content.endsWith("\n") ? "\n" : "";
-            return { ...t, content: t.content + sep + code + "\n" };
-          }),
-        );
-      }
-    },
-    [activeId, active.content],
-  );
-
-  const addTab = () => {
-    const count = tabs.length + 1;
-    const tab: FileTab = {
-      id: newId(),
-      name: `archivo${count}.psc`,
-      content: "Algoritmo SinTitulo\n\t\nFinAlgoritmo",
-    };
-    setTabs((prev) => [...prev, tab]);
-    setActiveId(tab.id);
-  };
-
-  // Challenge functions
-  const openChallengeTab = (challenge: ChallengeData) => {
-    const tab: FileTab = {
-      id: newId(),
-      name: `${challenge.title}.psc`,
-      content: challenge.starterCode,
-      isChallenge: true,
-      challengeId: challenge.id,
-    };
-    setTabs((prev) => [...prev, tab]);
-    setActiveId(tab.id);
-    setChallengesOpen(false);
-  };
-
-  const handleSelectChallenge = (challenge: ChallengeData) => {
-    // Check if this challenge is already open
-    const existing = tabs.find((t) => t.challengeId === challenge.id);
-    if (existing) {
-      setActiveId(existing.id);
+      restoreWorkspace(saved.tabs, saved.activeId);
+      _setLines([{ type: "info", text: "Se restauró tu trabajo guardado anteriormente." }]);
     } else {
-      openChallengeTab(challenge);
+      hydrated.current = true;
     }
-  };
-
-  const handleResetChallenge = (challengeId: string) => {
-    const challenge = getChallengeById(challengeId);
-    if (!challenge) return;
-    openChallengeTab(challenge);
-  };
-
-  const completeChallenge = (challengeId: string) => {
-    const updated: ChallengeStore = {
-      ...challengeState,
-      [challengeId]: { completed: true, completedAt: Date.now() },
-    };
-    setChallengeState(updated);
-    saveChallengeState(updated);
-  };
-
-  const requestCloseTab = (id: string, e: MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation();
-    const tab = tabs.find((t) => t.id === id);
-    if (!tab) return;
-    setTabPendingClose(tab);
-  };
-
-  const confirmCloseTab = () => {
-    const id = tabPendingClose?.id;
-    if (!id) return;
-    if (debugActive && id === activeId) {
-      stop();
-    }
-    setTabs((prev) => {
-      if (prev.length === 1) return prev;
-      const next = prev.filter((t) => t.id !== id);
-      if (id === activeId) setActiveId(next[next.length - 1].id);
-      return next;
+    void loadSharedCode().then((code) => {
+      if (code) {
+        openTab({ id: newId(), name: "compartido.psc", content: code });
+      }
     });
-    delete historiesRef.current[id];
-    delete prevStateRef.current[id];
-    bumpHistory();
-    setTabPendingClose(null);
-  };
-
-  const renameTab = (id: string) => {
-    const tab = tabs.find((t) => t.id === id);
-    if (!tab) return;
-    setEditingTabId(id);
-    setEditingTabName(stripFileExtension(tab.name));
-  };
-
-  const saveRenamedTab = () => {
-    if (!editingTabId) return;
-    const nextName = editingTabName.trim();
-    if (nextName) {
-      setTabs((prev) =>
-        prev.map((t) => (t.id === editingTabId ? { ...t, name: nextName } : t)),
-      );
-    }
-    setEditingTabId(null);
-    setEditingTabName("");
-  };
-
-  const cancelRenameTab = () => {
-    setEditingTabId(null);
-    setEditingTabName("");
-  };
-
-  const openFile = () => fileInputRef.current?.click();
-
-  const onFileChosen = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.currentTarget.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const tab: FileTab = {
-        id: newId(),
-        name: file.name,
-        content: String(reader.result ?? ""),
-      };
-      setTabs((prev) => [...prev, tab]);
-      setActiveId(tab.id);
-    };
-    reader.readAsText(file);
-    e.currentTarget.value = "";
-  };
-
-  const downloadFile = (format: "psc" | "txt" = "psc") => {
-    const blob = new Blob([active.content], {
-      type: "text/plain;charset=utf-8",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    const baseName = stripFileExtension(active.name).trim() || "archivo";
-    a.download = `${baseName}.${format}`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  // Comprimir texto usando Compression Streams API (gzip)
-  const compress = async (text: string): Promise<string> => {
-    const bytes = new TextEncoder().encode(text);
-    const cs = new CompressionStream("gzip");
-    const writer = cs.writable.getWriter();
-    writer.write(bytes);
-    writer.close();
-    const buf = await new Response(cs.readable).arrayBuffer();
-    return btoa(String.fromCharCode(...new Uint8Array(buf)));
-  };
-
-  // Descomprimir texto
-  const decompress = async (encoded: string): Promise<string> => {
-    const binary = atob(encoded);
-    const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
-    const cs = new DecompressionStream("gzip");
-    const writer = cs.writable.getWriter();
-    writer.write(bytes);
-    writer.close();
-    const buf = await new Response(cs.readable).arrayBuffer();
-    return new TextDecoder().decode(buf);
-  };
-
-  // Compartir código: comprime y copia URL al clipboard
-  const shareCode = async () => {
-    try {
-      const encoded = await compress(active.content);
-      const url = `${window.location.origin}${window.location.pathname}?c=${encoded}`;
-      await navigator.clipboard.writeText(url);
-      // Feedback visual breve
-      setSaveState("saved");
-      setTimeout(() => setSaveState("idle"), 1500);
-    } catch {
-      // Fallback: copiar solo el código
-      await navigator.clipboard.writeText(active.content);
-    }
-  };
-
-  // Leer código de URL al montar (solo si hay ?c=)
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const encoded = params.get("c");
-    if (encoded) {
-      decompress(encoded)
-        .then((code) => {
-          const id = newId();
-          const name = "compartido.psc";
-          setTabs((prev) => [...prev, { id, name, content: code }]);
-          setActiveId(id);
-          // Limpiar URL sin recargar
-          window.history.replaceState({}, "", window.location.pathname);
-        })
-        .catch(() => {
-          // Código inválido, ignorar
-        });
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const appendLine = (line: ConsoleLine) => {
-    if (line.type === "info" && line.text === "\u0001CLEAR\u0001") {
-      setLines([]);
-      return;
-    }
-    setLines((prev) => [...prev, line]);
-  };
-
-  const requestInput = (): Promise<string> => {
-    setWaitingForInput(true);
-    return new Promise<string>((resolve) => {
-      inputResolverRef.current = (v: string) => {
-        setWaitingForInput(false);
-        inputResolverRef.current = null;
-        resolve(v);
-      };
-    });
-  };
-
-  const submitInput = (value: string) => {
-    inputResolverRef.current?.(value);
-  };
-
-  const clearDebugState = useCallback(() => {
-    setDebugActive(false);
-    setDebugPaused(false);
-    setDebugLine(null);
-    setDebugVars([]);
-    debugControllerRef.current = { active: false, continueMode: false };
-  }, []);
-
-  const onStep = useCallback(async (line: number, vars: VarSnapshot[]) => {
-    if (!debugControllerRef.current.active) return;
-    if (debugControllerRef.current.continueMode) {
-      // In continue mode, flush sync so the highlight updates immediately
-      flushSync(() => {
-        setDebugLine(line);
-        setDebugVars(vars);
-        setDebugPaused(false);
-      });
-      return;
-    }
-    setDebugLine(line);
-    setDebugVars(vars);
-    setDebugPaused(true);
-    return new Promise<void>((resolve) => {
-      debugControllerRef.current.resume = () => {
-        debugControllerRef.current.resume = undefined;
-        resolve();
-      };
-    });
-  }, []);
-
-  const stepDebug = () => {
-    if (!debugControllerRef.current.active) return;
-    debugControllerRef.current.continueMode = false;
-    debugControllerRef.current.resume?.();
-  };
-
-  const run = async (debug = false) => {
-    if (running) return;
-    setLines([]);
-    setVars([]);
-    setErrorLines([]);
-    setRunning(true);
-    abortRef.current = { aborted: false };
-    clearDebugState();
-
-    // Reset challenge output/vars capture
-    challengeOutputRef.current = [];
-    varsRef.current = {};
-
-    // Check if this is a challenge tab
-    const isChallengeTab = active.isChallenge && active.challengeId;
-    const challenge = isChallengeTab ? getChallengeById(active.challengeId!) : undefined;
-
-    if (debug) {
-      setDebugActive(true);
-      debugControllerRef.current = { active: true, continueMode: false };
-    }
-
-    try {
-      // ── CHALLENGE: run all test cases ──────────────────────────
-      if (challenge) {
-        appendLine({
-          type: "info",
-          text: `🔍 Corriendo ${challenge.testCases.length} pruebas...`,
-        });
-
-        const result = await validateChallengeAsync(
-          challenge,
-          active.content,
-        );
-
-        // Show result per test case
-        for (const r of result.results) {
-          const expected = challenge.testCases.find((t) => t.input === r.input)?.expectedOutput ?? "";
-          if (r.passed) {
-            appendLine({
-              type: "info",
-              text: `✅ Prueba "${r.input}" | Obtuviste: "${r.output}" | Esperado: "${expected}"`,
-            });
-          } else {
-            appendLine({
-              type: "error",
-              text: `❌ Prueba "${r.input}" | Obtuviste: "${r.output}" | Esperado: "${expected}"`,
-            });
-          }
-        }
-
-        if (result.passed === result.total) {
-          appendLine({
-            type: "info",
-            text: `🎉 ¡Desafío completado! (${result.passed}/${result.total} pruebas)`,
-          });
-          completeChallenge(challenge.id);
-        } else {
-          appendLine({
-            type: "info",
-            text: `❌ Incorrecto. ${result.passed}/${result.total} pruebas pasaron.`,
-          });
-          appendLine({
-            type: "info",
-            text: `💡 Pista: ${challenge.hint}`,
-          });
-        }
-      }
-      // ── NORMAL: run user's code ───────────────────────────────
-      else {
-        await runPseint(active.content, {
-          onOutput: (line) => {
-            appendLine(line);
-            if (line.line && (line.type === "error" || line.type === "warning")) {
-              setErrorLines((prev) => Array.from(new Set([...prev, line.line!])));
-            }
-          },
-          requestInput,
-          signal: abortRef.current,
-          onVariables: setVars,
-          strictMode,
-          strongTyping,
-          debug,
-          onStep,
-        });
-      }
-    } finally {
-      appendLine({ type: "info", text: "--- Ejecución finalizada ---" });
-      setRunning(false);
-      setWaitingForInput(false);
-      clearDebugState();
-    }
-  };
-
-  const stop = () => {
-    abortRef.current.aborted = true;
-    // unblock any pending input
-    inputResolverRef.current?.("");
-    setWaitingForInput(false);
-    // release any active debug pause so the interpreter sees the abort signal
-    debugControllerRef.current.resume?.();
-  };
-
-  const formatActiveTab = () => {
-    const formatted = formatPseint(active.content);
-    updateActiveContent(formatted);
-  };
-
-  // Keyboard shortcuts: Ctrl/Cmd+Enter = run, Ctrl/Cmd+S = download, Ctrl+Shift+F = format
+  // Keyboard shortcuts
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (tabPendingClose && e.key === "Escape") {
         e.preventDefault();
-        setTabPendingClose(null);
+        cancelCloseTab();
         return;
       }
       const mod = e.ctrlKey || e.metaKey;
       if (!mod) return;
       if (e.shiftKey && e.key.toLowerCase() === "f") {
         e.preventDefault();
-        formatActiveTab();
+        handleFormat();
         return;
       }
       if (e.key === "Enter") {
         e.preventDefault();
-        if (!running) void run();
+        if (!running) void handleRun(false);
       } else if (e.key.toLowerCase() === "s") {
         e.preventDefault();
-        downloadFile("psc");
+        downloadFile(activeTab.content, activeTab.name, "psc");
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [running, active, tabPendingClose, strictMode]);
+  }, [running, activeTab, tabPendingClose, cancelCloseTab]);
 
-  // Resizable split: drag the divider to change the console width (desktop).
-  useEffect(() => {
-    const onMove = (e: globalThis.MouseEvent) => {
-      if (!draggingRef.current || !splitRef.current) return;
-      const rect = splitRef.current.getBoundingClientRect();
-      const fromRight = ((rect.right - e.clientX) / rect.width) * 100;
-      setConsolePct(Math.min(70, Math.max(20, fromRight)));
-    };
-    const onUp = () => {
-      if (draggingRef.current) {
-        draggingRef.current = false;
-        document.body.style.cursor = "";
-        document.body.style.userSelect = "";
-      }
-    };
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
-    return () => {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
-    };
-  }, []);
+  const appendLine = useCallback((line: ConsoleLine) => {
+    if (line.type === "info" && line.text === "\u0001CLEAR\u0001") {
+      _setLines([]);
+      return;
+    }
+    _setLines((prev) => [...prev, line]);
+  }, [_setLines]);
 
-  const startDrag = () => {
-    draggingRef.current = true;
-    document.body.style.cursor = "col-resize";
-    document.body.style.userSelect = "none";
+  const submitInput = useCallback((value: string) => {
+    _inputResolverRef.current?.(value);
+    _inputResolverRef.current = null;
+  }, [_inputResolverRef]);
+
+  const handleRun = useCallback(async (debug: boolean) => {
+    const isChallengeTab = activeTab.isChallenge && activeTab.challengeId;
+    const challenge = isChallengeTab ? getChallengeById(activeTab.challengeId!) : undefined;
+
+    const requestInput = (): Promise<string> => {
+      return new Promise<string>((resolve) => {
+        _inputResolverRef.current = (v) => {
+          _inputResolverRef.current = null;
+          resolve(v);
+        };
+      });
+    };
+
+    await run(activeTab.content, {
+      challenge,
+      strictMode,
+      strongTyping,
+      debug,
+    }, {
+      appendLine,
+      requestInput,
+      signal: _abortRef.current,
+    });
+  }, [activeTab, run, strictMode, strongTyping, appendLine, _inputResolverRef, _abortRef]);
+
+  const handleFormat = useCallback(() => {
+    const formatted = formatPseint(activeTab.content);
+    updateActiveContent(formatted);
+  }, [activeTab.content]);
+
+  const updateActiveContent = useCallback(
+    (content: string) => {
+      if (debugActive) stop();
+      updateTabContent(activeId, content);
+      snapshotOnChange(content);
+    },
+    [activeId, debugActive, stop, updateTabContent, snapshotOnChange],
+  );
+
+  const handleOpenFile = () => fileInputRef.current?.click();
+
+  const handleFileChosen = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.currentTarget.files?.[0];
+    if (!file) return;
+    const { name, content } = await readFileAsText(file);
+    openTab({ id: newId(), name, content });
+    e.currentTarget.value = "";
   };
+
+  const handleDownload = (format: "psc" | "txt") => {
+    downloadFile(activeTab.content, activeTab.name, format);
+  };
+
+  const handleSelectChallenge = (challenge: ChallengeData) => {
+    const existing = tabs.find((t) => t.challengeId === challenge.id);
+    if (existing) {
+      setActiveId(existing.id);
+    } else {
+      openTab({
+        id: newId(),
+        name: `${challenge.title}.psc`,
+        content: challenge.starterCode,
+        isChallenge: true,
+        challengeId: challenge.id,
+      });
+    }
+    setChallengesOpen(false);
+  };
+
+  const handleResetChallenge = (challengeId: string) => {
+    const challenge = getChallengeById(challengeId);
+    if (!challenge) return;
+    openTab({
+      id: newId(),
+      name: `${challenge.title}.psc`,
+      content: challenge.starterCode,
+      isChallenge: true,
+      challengeId: challenge.id,
+    });
+  };
+
+  const handleInsertSnippet = useCallback(
+    (code: string) => {
+      if (editorRef.current) {
+        const sep = activeTab.content.length && !activeTab.content.endsWith("\n") ? "\n" : "";
+        editorRef.current.insertAtCursor(sep + code + "\n");
+      }
+    },
+    [activeTab.content],
+  );
+
+  const handleClearConsole = useCallback(() => {
+    clearConsole();
+  }, [clearConsole]);
 
   return (
     <div className="flex h-screen flex-col bg-background text-foreground">
-      {/* Top bar */}
-      <header className="flex items-center justify-between border-b border-border bg-sidebar px-4 py-2">
-        <div className="flex items-center gap-2">
-          <div className="leading-tight flex  items-center gap- text-lg font-bold">
-            <span className="bg-gradient-to-r uppercase from-sky-400 via-indigo-500 to-fuchsia-500 bg-clip-text text-transparent">
-              Next
-            </span>
-            PSeint{" "}
-          </div>
-          {/* Save indicator */}
-          <div className="ml-2 hidden  items-center gap-1.5 text-xs text-muted-foreground sm:flex">
-            {saveState === "saving" && <Cloud className="size-3.5" />}
-            {saveState === "saved" && (
-              <span className="flex items-center gap-1 text-primary">
-                <CloudCheck className="size-3.5" />
-              </span>
-            )}
-            {saveState === "idle" && (
-              <span className="flex items-center gap-1">
-                <CloudCheck className="size-3.5" />
-              </span>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* Mobile: centered modal dropdown */}
-          <DropdownMenu>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <DropdownMenuTrigger className="flex cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:hidden">
-                  <Plus className="size-4" />
-                </DropdownMenuTrigger>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">Más opciones</TooltipContent>
-            </Tooltip>
-            <DropdownMenuContent centerScreen side="bottom" align="center" className="w-72">
-              <DropdownMenuItem onClick={openFile}>
-                <FolderOpen className="mr-2 size-4" />
-                Abrir archivo
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => downloadFile("psc")}>
-                <Download className="mr-2 size-4" />
-                Descargar (.psc)
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => downloadFile("txt")}>
-                <Download className="mr-2 size-4" />
-                Descargar (.txt)
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={shareCode}>
-                <Share2 className="mr-2 size-4" />
-                Compartir
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
-                <Settings className="mr-2 size-4" />
-                Configuración
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+      <Toolbar
+        running={running}
+        challengesOpen={challengesOpen}
+        challengeState={challengeState}
+        saveState={saveState}
+        onRun={() => void handleRun(false)}
+        onDebug={() => void handleRun(true)}
+        onStop={stop}
+        onOpenFile={handleOpenFile}
+        onDownload={handleDownload}
+        onShare={() => shareCode(activeTab.content)}
+        onOpenSettings={() => setSettingsOpen(true)}
+        onOpenChallenges={setChallengesOpen}
+        onSelectChallenge={handleSelectChallenge}
+        onResetChallenge={handleResetChallenge}
+      />
 
-          {/* Desktop: regular anchored dropdown */}
-          <DropdownMenu>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <DropdownMenuTrigger className="hidden cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:flex">
-                  <Plus className="size-4" />
-                </DropdownMenuTrigger>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">Más opciones</TooltipContent>
-            </Tooltip>
-            <DropdownMenuContent side="bottom" align="end" className="w-64">
-              <DropdownMenuItem onClick={openFile}>
-                <FolderOpen className="mr-2 size-4" />
-                Abrir archivo
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => downloadFile("psc")}>
-                <Download className="mr-2 size-4" />
-                Descargar (.psc)
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => downloadFile("txt")}>
-                <Download className="mr-2 size-4" />
-                Descargar (.txt)
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={shareCode}>
-                <Share2 className="mr-2 size-4" />
-                Compartir
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
-                <Settings className="mr-2 size-4" />
-                Configuración
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <SettingsDialog
-            open={settingsOpen}
-            onOpenChange={setSettingsOpen}
-            theme={theme}
-            setTheme={setTheme}
-            fontSize={fontSize}
-            setFontSize={setFontSize}
-            strictMode={strictMode}
-            setStrictMode={setStrictMode}
-            strongTyping={strongTyping}
-            setStrongTyping={setStrongTyping}
-            consoleSimple={consoleSimple}
-            setConsoleSimple={setConsoleSimple}
-            consoleFontSize={consoleFontSize}
-            setConsoleFontSize={setConsoleFontSize}
-          />
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                onClick={() => setChallengesOpen(true)}
-                className="flex cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                aria-label="Desafíos"
-              >
-                <Trophy className="size-4" />
-                <span className="hidden md:flex font-bold">Desafíos</span>
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">Desafíos</TooltipContent>
-          </Tooltip>
-          <ChallengesDialog
-            open={challengesOpen}
-            onOpenChange={setChallengesOpen}
-            challengeState={challengeState}
-            onSelectChallenge={handleSelectChallenge}
-            onResetChallenge={handleResetChallenge}
-          />
-
-          <button
-            onClick={() => void run(true)}
-            title="Depurar paso a paso"
-            disabled={running}
-            className={`${running ? "bg-muted text-muted-foreground" : " hover:bg-accent hover:brightness-110"} flex cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm font-medium transition-colors
-               duration-200`}
-          >
-            <Bug className="size-4" />
-            <span className="hidden md:flex font-bold"> Depurar</span>
-          </button>
-
-          {running ? (
-            <button
-              onClick={stop}
-              className="flex cursor-pointer items-center gap-1.5  md:w-28  flex items-center justify-center rounded-md bg-destructive px-3 py-1.5 text-sm font-medium text-white transition-colors hover:brightness-110 duration-200"
-            >
-              <Square className="size-4" />
-              <span className="hidden md:flex font-bold">Detener</span>
-            </button>
-          ) : (
-            <button
-              onClick={() => void run()}
-              title="Ejecutar (Ctrl+Enter)"
-              className="flex cursor-pointer items-center gap-1.5 rounded-md bg-primary md:w-28 flex items-center justify-center  px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:brightness-110 duration-200"
-            >
-              <Play className="stroke-2 size-4" />
-              <span className="hidden md:flex font-bold">Ejecutar</span>
-            </button>
-          )}
-        </div>
-      </header>
-
-      {/* Main split */}
-      <div ref={splitRef} className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        {/* Operations panel (flat, scrollable list) on the far left */}
+      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+        {/* Operations panel */}
         {showOps ? (
           <div className="flex shrink-0 flex-col border-b border-border animate-in slide-in-from-left-2 fade-in duration-300 lg:w-64 lg:border-b-0 lg:border-r">
             <div className="min-h-0 flex-1">
               <SnippetPanel
-                onInsert={insertSnippet}
+                onInsert={handleInsertSnippet}
                 onHide={() => setShowOps(false)}
               />
             </div>
@@ -1046,343 +323,103 @@ export function PseintIDE() {
             title="Mostrar operaciones"
           >
             <PanelLeftOpen className="size-4" />
-
             <span className="lg:[writing-mode:vertical-rl]">Operaciones</span>
           </button>
         )}
 
-        {/* Left: editor */}
+        {/* Left: editor + tabs */}
         <section className="flex min-h-0 flex-1 flex-col border-b border-border lg:border-b-0">
-          {/* Challenge banner */}
-          {active.isChallenge && active.challengeId && (
-            <ChallengeBanner
-              challenge={
-                getChallengeById(active.challengeId) ?? challenges[0]
-              }
-              onOpenChallenges={() => setChallengesOpen(true)}
-            />
-          )}
-          {/* Tabs */}
-          <div className="flex items-center border-b border-border bg-background">
-            <div className="flex flex-1 items-center overflow-x-auto">
-              {tabs.map((t) => (
-                <div
-                  key={t.id}
-                  onClick={() => setActiveId(t.id)}
-                  onDblClick={() => renameTab(t.id)}
-                  className={`group flex shrink-0 cursor-pointer items-center gap-1 border-r border-border px-2 py-2 text-sm transition-colors ${
-                    t.id === activeId
-                      ? "bg-card text-foreground"
-                      : "text-muted-foreground hover:bg-accent/50"
-                  }`}
-                  title="Doble clic para renombrar"
-                >
-                  <FileCode2 className="size-3.5 text-primary" />
-                  {editingTabId === t.id ? (
-                    <input
-                      ref={renameInputRef}
-                      value={editingTabName}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                        setEditingTabName(e.currentTarget.value)
-                      }
-                      onClick={(e) => e.stopPropagation()}
-                      onDblClick={(e) => e.stopPropagation()}
-                      onBlur={saveRenamedTab}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          saveRenamedTab();
-                        }
-                        if (e.key === "Escape") {
-                          e.preventDefault();
-                          cancelRenameTab();
-                        }
-                      }}
-                      className="min-w-24 rounded-md border border-border bg-background px-1 py-1 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
-                    />
-                  ) : (
-                    <span className="max-w-40 truncate">
-                      {stripFileExtension(t.name)}
-                    </span>
-                  )}
-                  <button
-                    onClick={(e) => requestCloseTab(t.id, e)}
-                    className="cursor-pointer rounded  md:opacity-0 transition-opacity hover:bg-accent group-hover:opacity-100"
-                    aria-label={`Cerrar ${t.name}`}
-                  >
-                    <X className="size-3.5" />
-                  </button>
-                </div>
-              ))}
-            </div>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={addTab}
-                  className="shrink-0 cursor-pointer rounded-md  px-2.5 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
-                  aria-label="Nueva pestaña"
-                >
-                  <Plus className="size-4" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">Nueva pestaña</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={formatActiveTab}
-                  className="shrink-0 cursor-pointer rounded-md  px-2.5 py-2 text-primary transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  <Sparkles className="size-4" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">Formatear</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={undo}
-                  disabled={!canUndo}
-                  className="shrink-0 cursor-pointer rounded-md  px-2.5 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
-                  aria-label="Deshacer"
-                >
-                  <Undo2 className="size-4" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">Deshacer</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={redo}
-                  disabled={!canRedo}
-                  className="shrink-0 cursor-pointer rounded-md  px-2.5 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
-                  aria-label="Rehacer"
-                >
-                  <Redo2 className="size-4" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">Rehacer</TooltipContent>
-            </Tooltip>
-            <button
-              onClick={() => setShowOps(true)}
-              className="flex shrink-0 cursor-pointer items-center justify-center gap-1.5 border-l border-border bg-sidebar px-2.5 py-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground lg:hidden"
-              title="Mostrar operaciones"
-            >
-              <PanelTopOpen className=" size-4" />
-            </button>
-          </div>
+          {/* File tab bar */}
+          <FileTabBar
+            tabs={tabs}
+            activeId={activeId}
+            editingTabId={editingTabId}
+            editingTabName={editingTabName}
+            canUndo={canUndo}
+            canRedo={canRedo}
+            renameInputRef={renameInputRef as unknown as { current: HTMLInputElement | null }}
+            onSelectTab={setActiveId}
+            onCloseTab={requestCloseTab}
+            onDoubleClickRename={renameTab}
+            onAddTab={addTab}
+            onFormat={handleFormat}
+            onUndo={undo}
+            onRedo={redo}
+            onShowOps={() => setShowOps(true)}
+            onEditNameChange={setEditingTabName}
+            onSaveRename={saveRename}
+            onCancelRename={cancelRename}
+          />
 
-          {/* Editor */}
-          <div className="min-h-0 flex-1">
-            <CodeEditor
-              ref={editorRef}
-              value={active.content}
-              onChange={updateActiveContent}
-              errorLines={errorLines}
-              onUndo={undo}
-              onRedo={redo}
-              highlightVariable={hoveredVariable}
-              highlightLine={debugActive ? debugLine : null}
-              fontSize={fontSize}
-              editorFont={editorFont}
-            />
-          </div>
+          {/* Code editor */}
+          <EditorPane
+            activeTab={activeTab}
+            editorRef={editorRef}
+            errorLines={errorLines}
+            highlightVariable={hoveredVariable}
+            debugActive={debugActive}
+            debugLine={debugLine}
+            fontSize={fontSize}
+            editorFont={editorFont}
+            onChange={updateActiveContent}
+            onUndo={undo}
+            onRedo={redo}
+            onOpenChallenges={setChallengesOpen}
+          />
         </section>
 
-        {/* Drag handle (desktop only) */}
-        <div
-          role="separator"
-          aria-orientation="vertical"
-          aria-label="Redimensionar consola"
-          onMouseDown={startDrag}
-          onDblClick={() => setConsolePct(38)}
-          className="hidden w-1 shrink-0 cursor-col-resize bg-border transition-colors hover:bg-primary lg:block"
-          title="Arrastra para redimensionar (doble clic para restablecer)"
+        {/* Right panel */}
+        <RightPanel
+          consolePct={consolePct}
+          lines={lines}
+          vars={vars}
+          debugActive={debugActive}
+          debugPaused={debugPaused}
+          waitingForInput={waitingForInput}
+          consoleSimple={consoleSimple}
+          consoleFont={consoleFont}
+          consoleFontSize={consoleFontSize}
+          debugVars={debugVars}
+          code={activeTab.content}
+          onSubmitInput={submitInput}
+          onHoverVariable={setHoveredVariable}
+          onClearConsole={handleClearConsole}
+          onStep={step}
+          onStartDrag={startDrag}
+          onResetWidth={() => setConsolePct(38)}
         />
-
-        {/* Right: console / flowchart */}
-        <section
-          className="flex min-h-0 flex-1 flex-col lg:flex-none lg:basis-(--console-basis)"
-          style={{ "--console-basis": `${consolePct}%` } as CSSProperties}
-        >
-          <div className="flex items-center justify-between border-b border-border bg-sidebar px-3 py-2">
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => setRightTab("console")}
-                className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-                  rightTab === "console"
-                    ? "bg-accent text-foreground"
-                    : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-                }`}
-              >
-                <Terminal className="size-3.5" />
-                Consola
-              </button>
-              <button
-                type="button"
-                onClick={() => setRightTab("flowchart")}
-                className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-                  rightTab === "flowchart"
-                    ? "bg-accent text-foreground"
-                    : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-                }`}
-              >
-                <Workflow className="size-3.5" />
-                Diagrama
-              </button>
-            </div>
-            <div className="flex items-center gap-2">
-              {rightTab === "console" && (
-                <button
-                  onClick={() => {
-                    setLines([]);
-                    setVars([]);
-                  }}
-                  className="flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                  title="Limpiar consola"
-                >
-                  <Eraser className="size-3.5" />
-                  Limpiar
-                </button>
-              )}
-            </div>
-          </div>
-
-          {rightTab === "console" ? (
-            <div className="flex h-full min-h-0 flex-col">
-              {debugActive && (
-                <div className="flex items-center justify-between border-b border-border bg-sidebar px-3 py-2">
-                  <div className="flex items-center gap-2">
-                    {/*   <button
-                      type="button"
-                      onClick={stepDebug}
-                      disabled={!debugPaused || waitingForInput}
-                      className="flex cursor-pointer items-center gap-1.5 rounded-md bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      <StepBack className="size-3.5" />
-                       Paso
-                    </button> */}
-                    <button
-                      type="button"
-                      onClick={stepDebug}
-                      disabled={!debugPaused || waitingForInput}
-                      className="flex cursor-pointer items-center gap-1.5 rounded-md bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      Paso
-                      <StepForward className="size-3.5" />
-                    </button>
-                    {/*  <button
-                      type="button"
-                      onClick={continueDebug}
-                      disabled={!debugPaused || waitingForInput}
-                      className="flex cursor-pointer items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      <Play className="size-3.5" />
-                      Continuar
-                    </button> */}
-                    {/*     <button
-                      type="button"
-                      onClick={stop}
-                      className="flex cursor-pointer items-center gap-1.5 rounded-md bg-destructive px-2.5 py-1.5 text-xs font-medium text-white transition-colors hover:opacity-90"
-                    >
-                      <Square className="size-3.5" />
-                      Detener
-                    </button> */}
-                  </div>
-                  <span className="text-xs text-muted-foreground">
-                    {waitingForInput
-                      ? "Esperando entrada…"
-                      : debugPaused
-                        ? "Pausado"
-                        : "Ejecutando…"}
-                  </span>
-                </div>
-              )}
-              <ConsolePanel
-                lines={lines}
-                waitingForInput={waitingForInput}
-                onSubmitInput={submitInput}
-                onHoverVariable={setHoveredVariable}
-                simple={consoleSimple}
-                consoleFont={consoleFont}
-                consoleFontSize={consoleFontSize}
-              />
-              <VariableInspector
-                vars={debugActive ? debugVars : vars}
-                fontSize={consoleFontSize}
-              />
-            </div>
-          ) : (
-            <FlowchartPanel code={active.content} />
-          )}
-        </section>
       </div>
+
+      <SettingsDialog
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        theme={theme}
+        setTheme={setTheme}
+        fontSize={fontSize}
+        setFontSize={setFontSize}
+        strictMode={strictMode}
+        setStrictMode={setStrictMode}
+        strongTyping={strongTyping}
+        setStrongTyping={setStrongTyping}
+        consoleSimple={consoleSimple}
+        setConsoleSimple={setConsoleSimple}
+        consoleFontSize={consoleFontSize}
+        setConsoleFontSize={setConsoleFontSize}
+      />
+
+      <CloseConfirmDialog
+        tab={tabPendingClose}
+        onConfirm={confirmCloseTab}
+        onCancel={cancelCloseTab}
+      />
 
       <input
         ref={fileInputRef}
         type="file"
         accept=".psc,.txt,.pseint,text/plain"
-        onChange={onFileChosen}
+        onChange={handleFileChosen}
         className="hidden"
       />
-
-      {tabPendingClose && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 px-4 backdrop-blur-sm">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="close-file-title"
-            aria-describedby="close-file-description"
-            className="w-full max-w-md rounded-2xl border border-border bg-card shadow-2xl"
-          >
-            <div className="flex items-start gap-3 border-b border-border px-5 py-4">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-destructive/12 text-destructive">
-                <Trash className="size-5" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <h2 id="close-file-title" className="text-base font-semibold">
-                  Eliminar
-                </h2>
-                <p
-                  id="close-file-description"
-                  className="mt-1 text-sm text-muted-foreground"
-                >
-                  Vas a eliminar{" "}
-                  <span className="font-medium text-foreground">
-                    {tabPendingClose.name}
-                  </span>
-                  .
-                </p>
-              </div>
-            </div>
-
-            <div className="px-5 py-4">
-              <div className="rounded-xl border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-                Si continuás, no podras recuperar el archivo.
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-4">
-              <button
-                type="button"
-                onClick={() => setTabPendingClose(null)}
-                className="rounded-md border border-border px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={confirmCloseTab}
-                className="rounded-md bg-destructive px-3 py-2 text-sm font-medium text-white transition-colors hover:opacity-90"
-              >
-                Cerrar archivo
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

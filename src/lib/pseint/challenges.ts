@@ -27,7 +27,7 @@ export const challenges: ChallengeData[] = [
     description: "Pedile al usuario su nombre y mostrale un saludo personalizado.",
     instruction: 'Usá la variable "nombre" para mostrar un saludo personalizado: "Hola, [nombre]"',
     starterCode: "",
-    hint: 'El saludo debe ser: "Hola, " + nombre',
+    hint: 'Puedes unir el saludo y el nombre usando la concatenación +',
     hiddenVariable: "nombre",
     testCases: [
       { input: "Ana", expectedOutput: "Hola, Ana" },

@@ -33,7 +33,6 @@ export const KEYWORDS = new Set([
   "enteros",
   "real",
   "reales",
-  "numero",
   "numerico",
   "logico",
   "logicos",
