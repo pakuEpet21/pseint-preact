@@ -321,3 +321,39 @@ button {
   opacity: 0.7;
   white-space: nowrap;
 }
+
+/* Exam mode: disable text selection in the code editor */
+.exam-mode .flex.h-screen.flex-col > section:nth-child(2) textarea,
+.exam-mode .CodeEditor-textarea {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Exam banner styles */
+.exam-banner {
+  background: oklch(0.95 0.02 80);
+  border-bottom: 1px solid oklch(0.85 0.01 80);
+}
+
+.dark .exam-banner {
+  background: oklch(0.22 0.02 280);
+  border-bottom-color: oklch(0.3 0.02 280);
+}
+
+.exam-consigna h1,
+.exam-consigna h2,
+.exam-consigna h3 {
+  margin: 0 0 0.5rem 0;
+  font-weight: 600;
+}
+.exam-consigna p {
+  margin: 0 0 0.5rem 0;
+}
+.exam-consigna ul,
+.exam-consigna ol {
+  margin: 0 0 0.5rem 0;
+  padding-left: 1.5rem;
+}
+.exam-consigna li {
+  margin-bottom: 0.25rem;
+}

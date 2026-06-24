@@ -14,7 +14,6 @@ import {
   Settings,
   Cloud,
   CloudCheck,
-  Sparkles,
   Undo2,
   Redo2,
   Eraser,
@@ -26,9 +25,7 @@ import {
   PanelTopOpen,
   Link2,
   Check,
-  Share,
   Share2,
-  ChartNoAxesColumn,
   ChartNoAxesGantt,
 } from "lucide-react";
 import { CodeEditor, type CodeEditorHandle } from "@/components/code-editor";
@@ -37,6 +34,7 @@ import { ConsolePanel } from "@/components/console-panel";
 import { VariableInspector } from "@/components/variable-inspector";
 import { FlowchartPanel } from "@/components/flowchart-panel";
 import { SettingsDialog } from "@/components/settings-dialog";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -92,7 +90,19 @@ interface DebugController {
   resume?: () => void;
 }
 
-export function PseintIDE() {
+export interface PseintIDEProps {
+  examMode?: boolean;
+  examConsigna?: string;
+  fixedConsignaTab?: boolean;
+  readOnlyConsigna?: boolean;
+}
+
+export function PseintIDE({
+  examMode = false,
+  examConsigna,
+  fixedConsignaTab = false,
+  readOnlyConsigna = false,
+}: PseintIDEProps) {
   const [tabs, setTabs] = useState<FileTab[]>([
     { id: newId(), name: "ejemplo.psc", content: STARTER_CODE },
   ]);
@@ -243,6 +253,45 @@ export function PseintIDE() {
   useEffect(() => {
     localStorage.setItem("pseint:consoleFontSize", String(consoleFontSize));
   }, [consoleFontSize]);
+
+  // Exam mode: apply exam-mode class to root element
+  useEffect(() => {
+    if (examMode) {
+      document.documentElement.classList.add("exam-mode");
+    } else {
+      document.documentElement.classList.remove("exam-mode");
+    }
+  }, [examMode]);
+
+  // Exam mode: block copy/cut/paste/select all and developer tools
+  useEffect(() => {
+    if (!examMode) return;
+
+    const blockKey = (e: KeyboardEvent) => {
+      const mod = e.ctrlKey || e.metaKey;
+      // Block Ctrl+C/V/X/A/U
+      if (mod && ["c", "v", "x", "a", "u"].includes(e.key.toLowerCase())) {
+        e.preventDefault();
+        return;
+      }
+      // Block F12 and Ctrl+Shift+I
+      if (e.key === "F12" || (mod && e.shiftKey && e.key.toLowerCase() === "i")) {
+        e.preventDefault();
+        return;
+      }
+    };
+
+    const blockContextMenu = (e: Event) => {
+      e.preventDefault();
+    };
+
+    document.addEventListener("keydown", blockKey);
+    document.addEventListener("contextmenu", blockContextMenu);
+    return () => {
+      document.removeEventListener("keydown", blockKey);
+      document.removeEventListener("contextmenu", blockContextMenu);
+    };
+  }, [examMode]);
 
   useEffect(() => {
     if (!editingTabId || !renameInputRef.current) return;
@@ -467,6 +516,8 @@ export function PseintIDE() {
 
   const requestCloseTab = (id: string, e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
+    // Cannot close the fixed consigna tab
+    if (id === "consigna-tab" && fixedConsignaTab) return;
     const tab = tabs.find((t) => t.id === id);
     if (!tab) return;
     setTabPendingClose(tab);
@@ -552,6 +603,19 @@ export function PseintIDE() {
     const url = buildShareUrl(compressed);
     setShareUrl(url);
     setShareOpen(true);
+  };
+
+  const shareExamUrl = async () => {
+    const consignaTab = tabs.find((t) => t.id === "consigna-tab");
+    if (!consignaTab) return;
+    const url = await buildExamUrl(consignaTab.content, "EXAMEN");
+    await navigator.clipboard.writeText(url);
+    setShareUrl(url);
+    setShareCopied(true);
+    if (shareTimerRef.current) clearTimeout(shareTimerRef.current);
+    shareTimerRef.current = setTimeout(() => {
+      setShareCopied(false);
+    }, 2000);
   };
 
   const copyShareUrl = async () => {
@@ -734,8 +798,20 @@ export function PseintIDE() {
     document.body.style.userSelect = "none";
   };
 
+  // Exam mode: create fixed consigna tab on mount
+  useEffect(() => {
+    if (fixedConsignaTab) {
+      const existingConsigna = tabs.find((t) => t.id === "consigna-tab");
+      if (!existingConsigna) {
+        const newTab = { id: "consigna-tab", name: "consigna", content: examConsigna || "" };
+        setTabs((prev) => [newTab, ...prev]);
+      }
+      setActiveId("consigna-tab");
+    }
+  }, [fixedConsignaTab]);
+
   return (
-    <div className="flex h-screen flex-col bg-background text-foreground">
+    <div className={`flex h-screen flex-col bg-background text-foreground ${examMode ? "exam-mode" : ""}`}>
       {/* Top bar */}
       <header className="flex items-center justify-between border-b border-border bg-sidebar px-4 py-2">
         <div className="flex items-center gap-2">
@@ -772,15 +848,19 @@ export function PseintIDE() {
               <TooltipContent side="bottom">Más opciones</TooltipContent>
             </Tooltip>
             <DropdownMenuContent side="bottom" centerScreen className="w-64">
-              <DropdownMenuItem onClick={openFile}>
-                <FolderOpen className="mr-2 size-4" />
-                Abrir archivo
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => void shareCode()}>
-                <Share2 className="mr-2 size-4" />
-                Compartir código
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
+              {!examMode && (
+                <>
+                  <DropdownMenuItem onClick={openFile}>
+                    <FolderOpen className="mr-2 size-4" />
+                    Abrir archivo
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => void shareCode()}>
+                    <Share2 className="mr-2 size-4" />
+                    Compartir código
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
               <DropdownMenuItem onClick={() => downloadFile("psc")}>
                 <Download className="mr-2 size-4" />
                 Descargar (.psc)
@@ -789,37 +869,60 @@ export function PseintIDE() {
                 <Download className="mr-2 size-4" />
                 Descargar (.txt)
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
-                <Settings className="mr-2 size-4" />
-                Configuración
-              </DropdownMenuItem>
+              {!examMode && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
+                    <Settings className="mr-2 size-4" />
+                    Configuración
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
 
           {/* Desktop: separate buttons (md: and up) */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={openFile}
-                className="hidden cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent md:flex"
-              >
-                <FolderOpen className="size-4" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">Abrir archivo</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={() => void shareCode()}
-                className="hidden cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent md:flex"
-              >
-                <Share2 className="size-4" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">Compartir código</TooltipContent>
-          </Tooltip>
+          {!examMode && (
+            <>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={openFile}
+                    className="hidden cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent md:flex"
+                  >
+                    <FolderOpen className="size-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Abrir archivo</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => void shareCode()}
+                    className="hidden cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent md:flex"
+                  >
+                    <Share2 className="size-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Compartir código</TooltipContent>
+              </Tooltip>
+            </>
+          )}
+          {/* Compartir examen button — only shown to teacher (examMode && !readOnlyConsigna) */}
+          {examMode && !readOnlyConsigna && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => void shareExamUrl()}
+                  className="hidden cursor-pointer items-center gap-1.5 rounded-md border border-border bg-primary px-3 py-1.5 text-sm text-primary-foreground transition-colors hover:opacity-90 md:flex"
+                >
+                  <Share2 className="size-4" />
+                  <span className="font-medium">Compartir examen</span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Compartir enlace del examen</TooltipContent>
+            </Tooltip>
+          )}
           <DropdownMenu>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -842,34 +945,38 @@ export function PseintIDE() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                onClick={() => setSettingsOpen(true)}
-                className="hidden cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:flex"
-              >
-                <Settings className="size-4" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">Configuración</TooltipContent>
-          </Tooltip>
-          <SettingsDialog
-            open={settingsOpen}
-            onOpenChange={setSettingsOpen}
-            theme={theme}
-            setTheme={setTheme}
-            fontSize={fontSize}
-            setFontSize={setFontSize}
-            strictMode={strictMode}
-            setStrictMode={setStrictMode}
-            strongTyping={strongTyping}
-            setStrongTyping={setStrongTyping}
-            consoleSimple={consoleSimple}
-            setConsoleSimple={setConsoleSimple}
-            consoleFontSize={consoleFontSize}
-            setConsoleFontSize={setConsoleFontSize}
-          />
+          {!examMode && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => setSettingsOpen(true)}
+                  className="hidden cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:flex"
+                >
+                  <Settings className="size-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Configuración</TooltipContent>
+            </Tooltip>
+          )}
+          {!examMode && (
+            <SettingsDialog
+              open={settingsOpen}
+              onOpenChange={setSettingsOpen}
+              theme={theme}
+              setTheme={setTheme}
+              fontSize={fontSize}
+              setFontSize={setFontSize}
+              strictMode={strictMode}
+              setStrictMode={setStrictMode}
+              strongTyping={strongTyping}
+              setStrongTyping={setStrongTyping}
+              consoleSimple={consoleSimple}
+              setConsoleSimple={setConsoleSimple}
+              consoleFontSize={consoleFontSize}
+              setConsoleFontSize={setConsoleFontSize}
+            />
+          )}
 
           <button
             onClick={() => void run(true)}
@@ -974,7 +1081,9 @@ export function PseintIDE() {
                   )}
                   <button
                     onClick={(e) => requestCloseTab(t.id, e)}
-                    className="cursor-pointer rounded p-0.5 md:opacity-0 transition-opacity hover:bg-accent group-hover:opacity-100"
+                    className={`cursor-pointer rounded p-0.5 md:opacity-0 transition-opacity hover:bg-accent group-hover:opacity-100 ${
+                      t.id === "consigna-tab" && fixedConsignaTab ? "hidden" : ""
+                    }`}
                     aria-label={`Cerrar ${t.name}`}
                   >
                     <X className="size-3.5" />
@@ -1053,6 +1162,7 @@ export function PseintIDE() {
               highlightLine={debugActive ? debugLine : null}
               fontSize={fontSize}
               editorFont={editorFont}
+              readOnly={readOnlyConsigna && active.id === "consigna-tab"}
             />
           </div>
         </section>

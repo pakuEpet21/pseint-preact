@@ -145,6 +145,7 @@ interface Props {
   highlightVariable?: { name: string; line?: number } | null;
   fontSize?: number;
   editorFont?: string;
+  readOnly?: boolean;
 }
 
 function getWordAtCursor(value: string, cursorPos: number): string {
@@ -222,6 +223,7 @@ export const CodeEditor = forwardRef<CodeEditorHandle, Props>(
       highlightVariable,
       fontSize = 14,
       editorFont,
+      readOnly = false,
     },
     ref,
   ) {
