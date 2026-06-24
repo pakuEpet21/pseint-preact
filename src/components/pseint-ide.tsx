@@ -59,6 +59,7 @@ import {
   compressToUrlSafeBase64,
   decompressFromUrlSafeBase64,
   buildShareUrl,
+  buildExamUrl,
 } from "@/lib/pseint/share";
 
 interface FileTab {
@@ -264,8 +265,9 @@ export function PseintIDE({
   }, [examMode]);
 
   // Exam mode: block copy/cut/paste/select all and developer tools
+  // Only block when readOnlyConsigna=true (student side), not in /exam (teacher side)
   useEffect(() => {
-    if (!examMode) return;
+    if (!readOnlyConsigna) return;
 
     const blockKey = (e: KeyboardEvent) => {
       const mod = e.ctrlKey || e.metaKey;
@@ -291,7 +293,7 @@ export function PseintIDE({
       document.removeEventListener("keydown", blockKey);
       document.removeEventListener("contextmenu", blockContextMenu);
     };
-  }, [examMode]);
+  }, [readOnlyConsigna]);
 
   useEffect(() => {
     if (!editingTabId || !renameInputRef.current) return;
@@ -798,17 +800,27 @@ export function PseintIDE({
     document.body.style.userSelect = "none";
   };
 
-  // Exam mode: create fixed consigna tab on mount
+  // Exam mode: create or update fixed consigna tab on mount and when examConsigna changes
   useEffect(() => {
     if (fixedConsignaTab) {
       const existingConsigna = tabs.find((t) => t.id === "consigna-tab");
+      const content = examConsigna || "";
+
       if (!existingConsigna) {
-        const newTab = { id: "consigna-tab", name: "consigna", content: examConsigna || "" };
+        // Create new tab
+        const newTab = { id: "consigna-tab", name: "consigna", content };
         setTabs((prev) => [newTab, ...prev]);
+      } else if (existingConsigna.content !== content) {
+        // Update existing tab content if changed
+        setTabs((prev) =>
+          prev.map((t) =>
+            t.id === "consigna-tab" ? { ...t, content } : t
+          )
+        );
       }
       setActiveId("consigna-tab");
     }
-  }, [fixedConsignaTab]);
+  }, [fixedConsignaTab, examConsigna, tabs]);
 
   return (
     <div className={`flex h-screen flex-col bg-background text-foreground ${examMode ? "exam-mode" : ""}`}>
@@ -1095,6 +1107,7 @@ export function PseintIDE({
               <TooltipTrigger asChild>
                 <button
                   onClick={addTab}
+                  disabled={fixedConsignaTab}
                   className="shrink-0 cursor-pointer rounded-md  px-2.5 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
                   aria-label="Nueva pestaña"
                 >

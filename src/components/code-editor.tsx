@@ -508,6 +508,7 @@ export const CodeEditor = forwardRef<CodeEditorHandle, Props>(
             autoCapitalize="off"
             autoComplete="off"
             autoCorrect="off"
+            readOnly={readOnly}
             className="absolute inset-0 resize-none overflow-auto whitespace-pre bg-transparent px-3 py-3 text-transparent caret-foreground outline-none"
             aria-label="Editor de pseudocódigo"
           />
