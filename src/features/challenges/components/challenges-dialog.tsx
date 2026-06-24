@@ -118,10 +118,8 @@ export function ChallengesDialog({
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onOpenChange]);
 
-  // Unlock challenges sequentially: first is always unlocked
   const isUnlocked = (index: number): boolean => {
     if (index === 0) return true;
-    // Previous challenge must be completed
     const prev = challenges[index - 1];
     return !!challengeState[prev.id]?.completed;
   };
@@ -133,7 +131,6 @@ export function ChallengesDialog({
         open ? "visible opacity-100" : "invisible opacity-0",
       )}
     >
-      {/* Backdrop */}
       <div
         className={cn(
           "absolute inset-0 bg-black/50 transition-all duration-300",
@@ -142,7 +139,6 @@ export function ChallengesDialog({
         onClick={() => onOpenChange(false)}
         aria-hidden="true"
       />
-      {/* Panel */}
       <div className="flex h-full items-center justify-center p-4">
         <div
           ref={panelRef}
@@ -157,7 +153,6 @@ export function ChallengesDialog({
               : "animate-out zoom-out-95 slide-out-to-top-4 fade-out",
           )}
         >
-          {/* Header */}
           <div className="flex items-center justify-between border-b border-border px-6 py-4">
             <div className="flex items-center gap-3">
               <div className="flex size-9 items-center justify-center rounded-xl bg-primary/10">
@@ -181,7 +176,6 @@ export function ChallengesDialog({
               <X className="size-5" />
             </button>
           </div>
-          {/* Content */}
           <div className="space-y-3 p-6">
             {challenges.map((challenge, index) => (
               <ChallengeCard
@@ -194,7 +188,6 @@ export function ChallengesDialog({
               />
             ))}
           </div>
-          {/* Footer */}
           <div className="flex items-center justify-end border-t border-border px-6 py-4">
             <button
               type="button"

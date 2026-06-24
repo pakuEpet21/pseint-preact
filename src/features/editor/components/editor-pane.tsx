@@ -1,9 +1,8 @@
-
 import type { CodeEditorHandle } from "@/components/code-editor";
 import { CodeEditor } from "@/components/code-editor";
-import { ChallengeBanner } from "@/components/challenges/challenge-banner";
+import { ChallengeBanner } from "@/features/challenges/components/challenge-banner";
 import { getChallengeById, challenges } from "@/lib/pseint/challenges";
-import type { FileTab } from "@/hooks/useTabs";
+import type { FileTab } from "@/features/editor/hooks/useTabs";
 
 interface EditorPaneProps {
   activeTab: FileTab;

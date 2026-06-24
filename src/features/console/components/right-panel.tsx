@@ -9,10 +9,10 @@ import {
 import { ConsolePanel } from "@/components/console-panel";
 import { VariableInspector } from "@/components/variable-inspector";
 import { FlowchartPanel } from "@/components/flowchart-panel";
+import { useResizableSplit } from "@/shared/hooks/useResizableSplit";
 import type { ConsoleLine, VarSnapshot } from "@/lib/pseint/interpreter";
 
 interface RightPanelProps {
-  consolePct: number;
   lines: ConsoleLine[];
   vars: VarSnapshot[];
   debugActive: boolean;
@@ -27,12 +27,9 @@ interface RightPanelProps {
   onHoverVariable: (v: { name: string; line?: number } | null) => void;
   onClearConsole: () => void;
   onStep: () => void;
-  onStartDrag: () => void;
-  onResetWidth: () => void;
 }
 
 export const RightPanel = ({
-  consolePct,
   lines,
   vars,
   debugActive,
@@ -47,10 +44,9 @@ export const RightPanel = ({
   onHoverVariable,
   onClearConsole,
   onStep,
-  onStartDrag,
-  onResetWidth,
 }: RightPanelProps) => {
   const [rightTab, setRightTab] = useState<"console" | "flowchart">("console");
+  const { consolePct, setConsolePct, startDrag } = useResizableSplit();
 
   return (
     <>
@@ -59,8 +55,8 @@ export const RightPanel = ({
         role="separator"
         aria-orientation="vertical"
         aria-label="Redimensionar consola"
-        onMouseDown={onStartDrag}
-        onDblClick={onResetWidth}
+        onMouseDown={startDrag}
+        onDblClick={() => setConsolePct(38)}
         className="hidden w-1 shrink-0 cursor-col-resize bg-border transition-colors hover:bg-primary lg:block"
         title="Arrastra para redimensionar (doble clic para restablecer)"
       />

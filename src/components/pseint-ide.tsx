@@ -2,23 +2,22 @@ import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 import type { ChangeEvent } from "preact/compat";
 
 import { PanelLeftOpen } from "lucide-react";
-import { Toolbar } from "@/components/toolbar";
-import { FileTabBar } from "@/components/file-tab-bar";
-import { EditorPane } from "@/components/editor-pane";
-import { RightPanel } from "@/components/right-panel";
+import { Toolbar } from "@/app/components/toolbar";
+import { FileTabBar } from "@/features/editor/components/file-tab-bar";
+import { EditorPane } from "@/features/editor/components/editor-pane";
+import { RightPanel } from "@/features/console/components/right-panel";
 import { SnippetPanel } from "@/components/snippet-panel";
-import { SettingsDialog } from "@/components/settings-dialog";
-import { CloseConfirmDialog } from "@/components/close-confirm-dialog";
+import { SettingsDialog } from "@/features/settings/components/settings-dialog";
+import { CloseConfirmDialog } from "@/features/editor/components/close-confirm-dialog";
 import type { CodeEditorHandle } from "@/components/code-editor";
-import { useTabs } from "@/hooks/useTabs";
-import { useHistory } from "@/hooks/useHistory";
-import { useSettings } from "@/hooks/useSettings";
-import { useDebugger } from "@/hooks/useDebugger";
-import { useShare } from "@/hooks/useShare";
-import { useWorkspace } from "@/hooks/useWorkspace";
-import { useResizableSplit } from "@/hooks/useResizableSplit";
+import { useTabs } from "@/features/editor/hooks/useTabs";
+import { useHistory } from "@/features/editor/hooks/useHistory";
+import { useSettings } from "@/features/settings/hooks/useSettings";
+import { useDebugger } from "@/features/debug/hooks/useDebugger";
+import { useShare } from "@/features/share/hooks/useShare";
+import { useWorkspace } from "@/features/workspace/hooks/useWorkspace";
 import { formatPseint } from "@/lib/pseint/format";
-import { downloadFile, readFileAsText, newId } from "@/lib/file-utils";
+import { downloadFile, readFileAsText, newId } from "@/shared/lib/file-utils";
 import { loadWorkspace } from "@/lib/pseint/storage";
 import { getChallengeById, type ChallengeData } from "@/lib/pseint/challenges";
 import type { ConsoleLine } from "@/lib/pseint/interpreter";
@@ -90,12 +89,6 @@ export function PseintIDE() {
     step,
     clearConsole,
   } = useDebugger();
-
-  const {
-    consolePct,
-    setConsolePct,
-    startDrag,
-  } = useResizableSplit();
 
   // History
   const historyResult = useHistory(activeId);
@@ -370,7 +363,6 @@ export function PseintIDE() {
 
         {/* Right panel */}
         <RightPanel
-          consolePct={consolePct}
           lines={lines}
           vars={vars}
           debugActive={debugActive}
@@ -385,8 +377,6 @@ export function PseintIDE() {
           onHoverVariable={setHoveredVariable}
           onClearConsole={handleClearConsole}
           onStep={step}
-          onStartDrag={startDrag}
-          onResetWidth={() => setConsolePct(38)}
         />
       </div>
 

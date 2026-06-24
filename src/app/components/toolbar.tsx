@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { ChallengesDialog } from "@/components/challenges/challenges-dialog";
+import { ChallengesDialog } from "@/features/challenges/components/challenges-dialog";
 import type { ChallengeStore } from "@/lib/pseint/storage";
 import type { ChallengeData } from "@/lib/pseint/challenges";
 

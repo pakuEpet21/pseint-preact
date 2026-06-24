@@ -1,6 +1,6 @@
 import { useCallback, useState } from "preact/hooks";
 import type { TargetedEvent } from "preact/compat";
-import { newId, stripFileExtension } from "@/lib/file-utils";
+import { newId, stripFileExtension } from "@/shared/lib/file-utils";
 import { STARTER_CODE } from "@/lib/pseint/snippets";
 
 export interface FileTab {
@@ -10,6 +10,7 @@ export interface FileTab {
   isChallenge?: boolean;
   challengeId?: string;
 }
+
 export interface UseTabsReturn {
   tabs: FileTab[];
   activeTab: FileTab;

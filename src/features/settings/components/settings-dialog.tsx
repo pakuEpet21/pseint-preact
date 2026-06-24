@@ -134,7 +134,6 @@ export function SettingsDialog({
         open ? "visible opacity-100" : "invisible opacity-0",
       )}
     >
-      {/* Backdrop */}
       <div
         className={cn(
           "absolute inset-0 bg-black/50 transition-all duration-300",
@@ -144,7 +143,6 @@ export function SettingsDialog({
         aria-hidden="true"
       />
 
-      {/* Panel */}
       <div className="flex h-full items-center justify-center p-4">
         <div
           ref={panelRef}
@@ -159,7 +157,6 @@ export function SettingsDialog({
               : "animate-out zoom-out-95 slide-out-to-top-4 fade-out",
           )}
         >
-          {/* Header */}
           <div className="flex items-center justify-between border-b border-border px-6 py-4">
             <h2 id="settings-title" className="text-lg font-semibold">
               Configuración
@@ -174,7 +171,6 @@ export function SettingsDialog({
             </button>
           </div>
 
-          {/* Content */}
           <div className="space-y-6 p-6">
             <Section title="Apariencia">
               <div className="flex gap-3">
@@ -262,28 +258,6 @@ export function SettingsDialog({
                   label="Tipado fuerte"
                 />
               </div>
-
-              {/*   <div className="rounded-xl bg-card ">
-                <div className="mb-2">
-                  <div className="text-sm font-medium">Fuente del editor</div>
-                  <div className="text-xs text-muted-foreground">
-                    Tipo de letra usado en el editor de código
-                  </div>
-                </div>
-                <select
-                  value={editorFont}
-                  onChange={(e) => setEditorFont((e.target as HTMLSelectElement).value)}
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary"
-                  aria-label="Fuente del editor"
-                >
-                  <option value="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace">Monoespaciada del sistema</option>
-                  <option value="Consolas, monospace">Consolas</option>
-                  <option value="Courier New, monospace">Courier New</option>
-                  <option value="Fira Code, monospace">Fira Code</option>
-                  <option value="JetBrains Mono, monospace">JetBrains Mono</option>
-                  <option value="Source Code Pro, monospace">Source Code Pro</option>
-                </select>
-              </div> */}
             </Section>
 
             <Section title="Consola">
@@ -301,34 +275,12 @@ export function SettingsDialog({
                 />
               </div>
 
-              {/*     <div className="borde-2 border-b py-2 bg-card ">
-                <div className="mb-2">
-                  <div className="text-sm font-medium">Fuente de la consola</div>
-                  <div className="text-xs text-muted-foreground">
-                    Tipo de letra usado en la salida
-                  </div>
-                </div>
-                <select
-                  value={consoleFont}
-                  onChange={(e) => setConsoleFont((e.target as HTMLSelectElement).value)}
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary"
-                  aria-label="Fuente de la consola"
-                >
-                  <option value="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace">Monoespaciada del sistema</option>
-                  <option value="Consolas, monospace">Consolas</option>
-                  <option value="Courier New, monospace">Courier New</option>
-                  <option value="Fira Code, monospace">Fira Code</option>
-                  <option value="JetBrains Mono, monospace">JetBrains Mono</option>
-                  <option value="Source Code Pro, monospace">Source Code Pro</option>
-                </select>
-              </div> */}
-
               <div className="flex items-center justify-between rounded-xl bg-card ">
                 <div>
                   <div className="text-sm font-medium">
                     Tamaño de fuente
                   </div>
-             
+
                 </div>
                 <div className="flex items-center gap-2">
                   <button

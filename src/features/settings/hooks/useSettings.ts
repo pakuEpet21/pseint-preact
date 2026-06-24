@@ -38,7 +38,6 @@ export const useSettings = (): UseSettingsReturn => {
   const [consoleFontSize, setConsoleFontSize] = useState(14);
   const [saveState, setSaveState] = useState<SaveState>("idle");
 
-  // Load saved settings on mount
   useEffect(() => {
     const savedTheme = localStorage.getItem("pseint:theme");
     if (savedTheme === "light" || savedTheme === "dark" || savedTheme === "dracula") {
@@ -66,7 +65,6 @@ export const useSettings = (): UseSettingsReturn => {
     }
   }, []);
 
-  // Apply theme to <html> and persist
   useEffect(() => {
     const root = document.documentElement;
     root.classList.remove("dark", "dracula");

@@ -10,8 +10,8 @@ import {
   PanelTopOpen,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { stripFileExtension } from "@/lib/file-utils";
-import type { FileTab } from "@/hooks/useTabs";
+import { stripFileExtension } from "@/shared/lib/file-utils";
+import type { FileTab } from "@/features/editor/hooks/useTabs";
 
 interface FileTabBarProps {
   tabs: FileTab[];
@@ -20,10 +20,9 @@ interface FileTabBarProps {
   editingTabName: string;
   canUndo: boolean;
   canRedo: boolean;
-  showOps?: boolean;
   renameInputRef: { current: HTMLInputElement | null };
   onSelectTab: (id: string) => void;
-  onCloseTab: (id: string, e: ChangeEvent<HTMLButtonElement>) => void;
+  onCloseTab: (id: string, e: TargetedEvent<HTMLButtonElement>) => void;
   onDoubleClickRename: (id: string) => void;
   onAddTab: () => void;
   onFormat: () => void;
@@ -79,7 +78,7 @@ export const FileTabBar = ({
             <FileCode2 className="size-3.5 text-primary" />
             {editingTabId === t.id ? (
               <input
-                ref={renameInputRef}
+                ref={renameInputRef as unknown as { current: HTMLInputElement | null }}
                 value={editingTabName}
                 onChange={(e: ChangeEvent<HTMLInputElement>) =>
                   onEditNameChange(e.currentTarget.value)

@@ -5,8 +5,8 @@ import {
   saveChallengeState,
   type ChallengeStore,
 } from "@/lib/pseint/storage";
-import { resetIdCounter, getIdCounter } from "@/lib/file-utils";
-import type { FileTab } from "./useTabs";
+import { resetIdCounter, getIdCounter } from "@/shared/lib/file-utils";
+import type { FileTab } from "@/features/editor/hooks/useTabs";
 
 export interface UseWorkspaceReturn {
   tabs: FileTab[];
@@ -34,7 +34,6 @@ export const useWorkspace = (
   const hydratedRef = useRef(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Load challenge state on mount
   useEffect(() => {
     const saved = loadChallengeState();
     if (Object.keys(saved).length > 0) {

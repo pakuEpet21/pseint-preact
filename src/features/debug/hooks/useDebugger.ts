@@ -130,12 +130,12 @@ export const useDebugger = (): UseDebuggerReturn => {
           appendLine({
             type: r.passed ? "info" : "error",
             text: r.passed
-              ? `✓ Test "${r.input}" | Obtuviste: "${r.output}" | Esperado: "${expected}"`
-              : `× Test "${r.input}" | Obtuviste: "${r.output}" | Esperado: "${expected}"`,
+              ? `✅ Prueba "${r.input}" | Obtuviste: "${r.output}" | Esperado: "${expected}"`
+              : `❌ Prueba "${r.input}" | Obtuviste: "${r.output}" | Esperado: "${expected}"`,
           });
         }
         if (result.passed === result.total) {
-          appendLine({ type: "info", text: `¡Desafío completado! (${result.passed}/${result.total} pruebas)` });
+          appendLine({ type: "info", text: `🎉 ¡Desafío completado! (${result.passed}/${result.total} pruebas)` });
         } else {
           appendLine({ type: "info", text: `❌ Incorrecto. ${result.passed}/${result.total} pruebas pasaron.` });
           appendLine({ type: "info", text: `💡 Pista: ${challenge.hint}` });

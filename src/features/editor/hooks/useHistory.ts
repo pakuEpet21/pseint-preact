@@ -31,7 +31,6 @@ export const useHistory = (
   const prevActiveIdRef = useRef(activeId);
   const snapshotTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isUndoingRef = useRef(false);
-  // External refs set by the editor
   const cursorRef = useRef<(() => number) | null>(null);
   const setCursorRef = useRef<((pos: number) => void) | null>(null);
   const updateContentRef = useRef<((content: string) => void) | null>(null);

@@ -1,5 +1,5 @@
 import { useCallback } from "preact/hooks";
-import { compress, decompress } from "@/lib/compression";
+import { compress, decompress } from "@/shared/lib/compression";
 
 export interface UseShareReturn {
   shareCode: (content: string) => void;
