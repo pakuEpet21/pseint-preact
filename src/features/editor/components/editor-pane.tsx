@@ -3,7 +3,6 @@ import { CodeEditor } from "@/components/code-editor";
 import { ChallengeBanner } from "@/features/challenges/components/challenge-banner";
 import { getChallengeById, challenges } from "@/lib/pseint/challenges";
 import type { FileTab } from "@/features/editor/hooks/useTabs";
-import type { ChallengeStore } from "@/lib/pseint/storage";
 
 interface EditorPaneProps {
   activeTab: FileTab;
@@ -17,13 +16,6 @@ interface EditorPaneProps {
   onChange: (content: string) => void;
   onUndo: () => void;
   onRedo: () => void;
-  onOpenChallenges: (open: boolean) => void;
-  currentChallengeIndex?: number;
-  totalChallenges?: number;
-  challengeState?: ChallengeStore;
-  onPrevious?: () => void;
-  onNext?: () => void;
-  onClose?: () => void;
 }
 
 export const EditorPane = ({
@@ -38,13 +30,6 @@ export const EditorPane = ({
   onChange,
   onUndo,
   onRedo,
-  onOpenChallenges,
-  currentChallengeIndex = 0,
-  totalChallenges = 1,
-  challengeState,
-  onPrevious,
-  onNext,
-  onClose,
 }: EditorPaneProps) => {
   return (
     <section className="flex min-h-0 flex-1 flex-col border-b border-border lg:border-b-0">
@@ -53,13 +38,6 @@ export const EditorPane = ({
           challenge={
             getChallengeById(activeTab.challengeId) ?? challenges[0]
           }
-          currentIndex={currentChallengeIndex}
-          totalChallenges={totalChallenges}
-          challengeState={challengeState}
-          onOpenChallenges={() => onOpenChallenges(true)}
-          onPrevious={onPrevious ?? (() => {})}
-          onNext={onNext ?? (() => {})}
-          onClose={onClose ?? (() => {})}
         />
       )}
       <div className="min-h-0 flex-1">

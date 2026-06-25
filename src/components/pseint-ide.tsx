@@ -387,6 +387,10 @@ export function PseintIDE() {
             onCancelRename={cancelRename}
             onClose={exitChallengesMode}
             onOpenChallenges={() => setChallengesOpen(true)}
+            currentChallengeIndex={currentChallengeIndex}
+            challengeState={challengeState}
+            onPrevious={handlePreviousChallenge}
+            onNext={handleNextChallenge}
           />
 
           {/* Code editor */}
@@ -402,12 +406,6 @@ export function PseintIDE() {
             onChange={updateActiveContent}
             onUndo={undo}
             onRedo={redo}
-            onOpenChallenges={setChallengesOpen}
-            currentChallengeIndex={currentChallengeIndex}
-            totalChallenges={challenges.length}
-            onPrevious={handlePreviousChallenge}
-            onNext={handleNextChallenge}
-            onClose={exitChallengesMode}
           />
         </section>
 

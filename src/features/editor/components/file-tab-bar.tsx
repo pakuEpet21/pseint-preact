@@ -132,7 +132,7 @@ export const FileTabBar = ({
               onClick={onOpenChallenges}
               className="rounded-md bg-primary/10 px-2 py-1 text-xs font-medium tabular-nums text-primary transition-colors hover:bg-primary/20"
             >
-              {currentChallengeIndex + 1}/{challenges.length}
+              {currentChallengeIndex + 1}/{lastUnlockedIndex + 1}
             </button>
             <button
               type="button"
