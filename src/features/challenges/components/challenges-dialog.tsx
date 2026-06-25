@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "preact/hooks";
-import { X, Trophy, Lock, CheckCircle2, Lightbulb } from "lucide-react";
+import { useEffect, useRef, useState } from "preact/hooks";
+import { X, Trophy, Lock, CheckCircle2, Lightbulb, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 import { challenges, type ChallengeData } from "@/lib/pseint/challenges";
@@ -101,6 +101,32 @@ export function ChallengesDialog({
   onResetChallenge,
 }: ChallengesDialogProps) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const [pageIndex, setPageIndex] = useState(0);
+  const GROUP_SIZE = 3;
+
+  const firstThreeCompleted = challenges.slice(0, 3).every(
+    (c) => challengeState[c.id]?.completed,
+  );
+  const showIntermediate = firstThreeCompleted;
+  const totalGroups = showIntermediate ? 2 : 1;
+
+  const startIndex = pageIndex * GROUP_SIZE;
+  const visibleChallenges = challenges.slice(startIndex, startIndex + GROUP_SIZE);
+
+  const isCurrentGroupUnlocked = (groupIndex: number): boolean => {
+    if (groupIndex === 0) return true;
+    return challenges.slice(0, 3).every(c => challengeState[c.id]?.completed);
+  };
+
+  const isUnlocked = (index: number): boolean => {
+    if (index === 0) return true;
+    const prev = challenges[index - 1];
+    return !!challengeState[prev.id]?.completed;
+  };
+
+  useEffect(() => {
+    if (open) setPageIndex(0);
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -110,12 +136,6 @@ export function ChallengesDialog({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onOpenChange]);
-
-  const isUnlocked = (index: number): boolean => {
-    if (index === 0) return true;
-    const prev = challenges[index - 1];
-    return !!challengeState[prev.id]?.completed;
-  };
 
   return (
     <div
@@ -147,37 +167,76 @@ export function ChallengesDialog({
           )}
         >
           <div className="flex items-center justify-between border-b border-border px-6 py-4">
-            <div className="flex items-center gap-3">
-              
-              <div>
-                <h2 id="challenges-title" className="text-lg font-semibold">
-                  Desafíos
-                </h2>
-                <p className="text-xs text-muted-foreground">
-                  Completá desafíos para aprender.
-                </p>
-              </div>
+            <div>
+              <h2 id="challenges-title" className="text-lg font-semibold">
+                Desafíos
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Completá desafíos para aprender.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setPageIndex(p => Math.max(0, p - 1))}
+                disabled={pageIndex === 0}
+                className={cn(
+                  "rounded p-1.5 transition-colors",
+                  pageIndex === 0
+                    ? "opacity-40 cursor-not-allowed"
+                    : "hover:bg-accent"
+                )}
+                aria-label="Desafíos anteriores"
+              >
+                <ChevronLeft className="size-4" />
+              </button>
+              <span className="text-sm font-medium tabular-nums">
+                {pageIndex + 1}/{totalGroups}
+              </span>
+              <button
+                type="button"
+                onClick={() => setPageIndex(p => Math.min(totalGroups - 1, p + 1))}
+                disabled={pageIndex === totalGroups - 1 || !showIntermediate}
+                className={cn(
+                  "rounded p-1.5 transition-colors",
+                  pageIndex === totalGroups - 1 || !showIntermediate
+                    ? "opacity-40 cursor-not-allowed"
+                    : "hover:bg-accent"
+                )}
+                aria-label="Siguientes desafíos"
+              >
+                <ChevronRight className="size-4" />
+              </button>
             </div>
             <button
               type="button"
               onClick={() => onOpenChange(false)}
-              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground ml-4"
               aria-label="Cerrar desafíos"
             >
               <X className="size-5" />
             </button>
           </div>
           <div className="space-y-3 p-6">
-            {challenges.map((challenge, index) => (
-              <ChallengeCard
-                key={challenge.id}
-                challenge={challenge}
-                state={challengeState[challenge.id]}
-                isUnlocked={isUnlocked(index)}
-                onSelect={() => onSelectChallenge(challenge)}
-                onReset={() => onResetChallenge(challenge.id)}
-              />
-            ))}
+            <h3 className="mb-3 text-sm font-semibold text-muted-foreground">
+              {pageIndex === 0
+                ? "Básicos — Saludo, Doble y Par/Impar"
+                : "Intermedios — Condicionales, Bucles y Funciones"}
+            </h3>
+
+            {visibleChallenges.map((challenge, idx) => {
+              const globalIndex = startIndex + idx;
+              return (
+                <ChallengeCard
+                  key={challenge.id}
+                  challenge={challenge}
+                  state={challengeState[challenge.id]}
+                  isUnlocked={isCurrentGroupUnlocked(pageIndex) && isUnlocked(globalIndex)}
+                  onSelect={() => onSelectChallenge(challenge)}
+                  onReset={() => onResetChallenge(challenge.id)}
+                />
+              );
+            })}
           </div>
           <div className="flex items-center justify-end border-t border-border px-6 py-4">
             <button

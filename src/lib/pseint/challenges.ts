@@ -68,6 +68,69 @@ export const challenges: ChallengeData[] = [
     ],
     validator: "par-o-impar",
   },
+  {
+    id: "mayor-de-dos",
+    title: "Mayor de Dos",
+    description: "Dados dos números, indicá cuál es el mayor.",
+    instruction: 'Usá las variables "a" y "b". Mostrá "MAYOR" seguido del mayor valor.',
+    starterCode: `Algoritmo Mayor
+Definir a, b Como Entero
+// Ingresá dos números
+a <- 10
+b <- 25
+// Tu código aquí
+FinAlgoritmo`,
+    hint: "Usá Si...Entonces...Sino...FinSi para comparar los dos valores",
+    hiddenVariable: "a",
+    testCases: [
+      { input: "10", expectedOutput: "MAYOR 25" },
+      { input: "25", expectedOutput: "MAYOR 25" },
+      { input: "5", expectedOutput: "MAYOR 5" },
+    ],
+    validator: "contiene",
+  },
+  {
+    id: "suma-hasta-n",
+    title: "Suma Acumulada",
+    description: "Sumá todos los números desde 1 hasta el número indicado.",
+    instruction: 'Usá la variable "n". Mostrá la suma total de 1 hasta n.',
+    starterCode: `Algoritmo Suma
+Definir n, i, suma Como Entero
+// n contiene el número límite
+n <- 5
+suma <- 0
+// Tu código aquí: usa un Para o Mientras para sumar
+FinAlgoritmo`,
+    hint: "Podés usar un bucle Para: Para i <- 1 Hasta n Hacer...FinPara",
+    hiddenVariable: "n",
+    testCases: [
+      { input: "5", expectedOutput: "15" },
+      { input: "3", expectedOutput: "6" },
+      { input: "10", expectedOutput: "55" },
+    ],
+    validator: "contiene",
+  },
+  {
+    id: "factorial",
+    title: "Factorial",
+    description: "Calculá el factorial de un número (n!).",
+    instruction: 'Usá la variable "n". Mostrá el factorial de n (producto de 1×2×...×n).',
+    starterCode: `Algoritmo Factorial
+Definir n, i, resultado Como Entero
+// n contiene el número
+n <- 5
+resultado <- 1
+// Tu código aquí
+FinAlgoritmo`,
+    hint: "El factorial de 5 es 5×4×3×2×1 = 120. Usá un bucle Para o Mientras",
+    hiddenVariable: "n",
+    testCases: [
+      { input: "5", expectedOutput: "120" },
+      { input: "3", expectedOutput: "6" },
+      { input: "0", expectedOutput: "1" },
+    ],
+    validator: "contiene",
+  },
 ];
 
 export function getChallengeById(id: string): ChallengeData | undefined {
@@ -131,7 +194,7 @@ export function validateSingle(
   const trimmed = outputText.trim();
 
   if (validator === "contiene") {
-    return trimmed.toLowerCase().includes(expectedOutput.toLowerCase());
+    return trimmed.includes(expectedOutput);
   }
 
   if (validator === "doble") {

@@ -7,8 +7,8 @@ import {
 } from "./challenges";
 
 describe("challenge data integrity", () => {
-  it("has exactly 3 challenges", () => {
-    expect(challenges).toHaveLength(3);
+  it("has exactly 6 challenges", () => {
+    expect(challenges).toHaveLength(6);
   });
 
   it("each challenge has all required fields", () => {
@@ -60,9 +60,9 @@ describe("validateSingle", () => {
       expect(result).toBe(false);
     });
 
-    it("is case insensitive", () => {
+    it("is case sensitive", () => {
       const result = validateSingle("contiene", "hola, ana", "Ana", "Hola, Ana");
-      expect(result).toBe(true);
+      expect(result).toBe(false);
     });
   });
 

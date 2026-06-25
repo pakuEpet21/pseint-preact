@@ -20,7 +20,7 @@ import { useShare } from "@/features/share/hooks/useShare";
 import { useWorkspace } from "@/features/workspace/hooks/useWorkspace";
 import { formatPseint } from "@/lib/pseint/format";
 import { downloadFile, readFileAsText, newId } from "@/shared/lib/file-utils";
-import { getChallengeById, type ChallengeData } from "@/lib/pseint/challenges";
+import { challenges, getChallengeById, type ChallengeData } from "@/lib/pseint/challenges";
 import type { ConsoleLine } from "@/lib/pseint/interpreter";
 
 export function PseintIDE() {
@@ -29,6 +29,7 @@ export function PseintIDE() {
   const [challengesOpen, setChallengesOpen] = useState(false);
   const [hoveredVariable, setHoveredVariable] = useState<{ name: string; line?: number } | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [currentChallengeIndex, setCurrentChallengeIndex] = useState(0);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editorRef = useRef<CodeEditorHandle>(null);
@@ -257,7 +258,33 @@ export function PseintIDE() {
         challengeId: challenge.id,
       });
     }
+    setCurrentChallengeIndex(challenges.findIndex((c) => c.id === challenge.id));
     setChallengesOpen(false);
+  };
+
+  const getCurrentChallenge = (): ChallengeData | undefined => {
+    if (!activeTab.isChallenge || !activeTab.challengeId) return undefined;
+    return getChallengeById(activeTab.challengeId);
+  };
+
+  const handlePreviousChallenge = () => {
+    const current = getCurrentChallenge();
+    if (!current) return;
+    const idx = challenges.findIndex((c) => c.id === current.id);
+    if (idx > 0) {
+      const prev = challenges[idx - 1];
+      handleSelectChallenge(prev);
+    }
+  };
+
+  const handleNextChallenge = () => {
+    const current = getCurrentChallenge();
+    if (!current) return;
+    const idx = challenges.findIndex((c) => c.id === current.id);
+    if (idx < challenges.length - 1) {
+      const next = challenges[idx + 1];
+      handleSelectChallenge(next);
+    }
   };
 
   const handleResetChallenge = (challengeId: string) => {
@@ -365,6 +392,10 @@ export function PseintIDE() {
             onUndo={undo}
             onRedo={redo}
             onOpenChallenges={setChallengesOpen}
+            currentChallengeIndex={currentChallengeIndex}
+            totalChallenges={challenges.length}
+            onPrevious={handlePreviousChallenge}
+            onNext={handleNextChallenge}
           />
         </section>
 

@@ -17,6 +17,10 @@ interface EditorPaneProps {
   onUndo: () => void;
   onRedo: () => void;
   onOpenChallenges: (open: boolean) => void;
+  currentChallengeIndex?: number;
+  totalChallenges?: number;
+  onPrevious?: () => void;
+  onNext?: () => void;
 }
 
 export const EditorPane = ({
@@ -32,6 +36,10 @@ export const EditorPane = ({
   onUndo,
   onRedo,
   onOpenChallenges,
+  currentChallengeIndex = 0,
+  totalChallenges = 1,
+  onPrevious,
+  onNext,
 }: EditorPaneProps) => {
   return (
     <section className="flex min-h-0 flex-1 flex-col border-b border-border lg:border-b-0">
@@ -40,7 +48,11 @@ export const EditorPane = ({
           challenge={
             getChallengeById(activeTab.challengeId) ?? challenges[0]
           }
+          currentIndex={currentChallengeIndex}
+          totalChallenges={totalChallenges}
           onOpenChallenges={() => onOpenChallenges(true)}
+          onPrevious={onPrevious ?? (() => {})}
+          onNext={onNext ?? (() => {})}
         />
       )}
       <div className="min-h-0 flex-1">
