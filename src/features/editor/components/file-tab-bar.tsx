@@ -4,10 +4,10 @@ import {
   Plus,
   X,
   FileCode2,
-  Sparkles,
   Undo2,
   Redo2,
   PanelTopOpen,
+  TextInitial,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { stripFileExtension } from "@/shared/lib/file-utils";
@@ -133,7 +133,7 @@ export const FileTabBar = ({
             onClick={onFormat}
             className="shrink-0 cursor-pointer rounded-md px-2.5 py-2 text-primary transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
           >
-            <Sparkles className="size-4" />
+            <TextInitial className="size-4" />
           </button>
         </TooltipTrigger>
         <TooltipContent side="bottom">Formatear</TooltipContent>

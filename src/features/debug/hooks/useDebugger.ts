@@ -15,6 +15,7 @@ export interface RunOptions {
   strictMode: boolean;
   strongTyping: boolean;
   debug: boolean;
+  onChallengeComplete?: (challengeId: string, passed: boolean) => void;
 }
 
 export interface UseDebuggerReturn {
@@ -114,8 +115,14 @@ export const useDebugger = (): UseDebuggerReturn => {
     abortRef.current = { aborted: false };
     clearDebugState();
 
-    const { challenge, strictMode, strongTyping, debug } = opts;
+    const { challenge, strictMode, strongTyping, debug, onChallengeComplete } = opts;
     const { appendLine, requestInput, signal } = callbacks;
+
+    // Wrap requestInput to track waitingForInput state
+    const wrappedRequestInput = (): Promise<string> => {
+      setWaitingForInput(true);
+      return requestInput().finally(() => setWaitingForInput(false));
+    };
 
     if (debug) {
       setDebugActive(true);
@@ -134,12 +141,14 @@ export const useDebugger = (): UseDebuggerReturn => {
               : `❌ Prueba "${r.input}" | Obtuviste: "${r.output}" | Esperado: "${expected}"`,
           });
         }
-        if (result.passed === result.total) {
+        const passed = result.passed === result.total;
+        if (passed) {
           appendLine({ type: "info", text: `🎉 ¡Desafío completado! (${result.passed}/${result.total} pruebas)` });
         } else {
           appendLine({ type: "info", text: `❌ Incorrecto. ${result.passed}/${result.total} pruebas pasaron.` });
           appendLine({ type: "info", text: `💡 Pista: ${challenge.hint}` });
         }
+        onChallengeComplete?.(challenge.id, passed);
       } else {
         const { runPseint } = await import("@/lib/pseint/interpreter");
         await runPseint(content, {
@@ -149,7 +158,7 @@ export const useDebugger = (): UseDebuggerReturn => {
               setErrorLines((prev) => Array.from(new Set([...prev, line.line!])));
             }
           },
-          requestInput,
+          requestInput: wrappedRequestInput,
           signal,
           onVariables: setVars,
           strictMode,

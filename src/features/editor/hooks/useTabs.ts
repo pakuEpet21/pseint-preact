@@ -2,6 +2,7 @@ import { useCallback, useState } from "preact/hooks";
 import type { TargetedEvent } from "preact/compat";
 import { newId, stripFileExtension } from "@/shared/lib/file-utils";
 import { STARTER_CODE } from "@/lib/pseint/snippets";
+import { loadWorkspace } from "@/lib/pseint/storage";
 
 export interface FileTab {
   id: string;
@@ -9,6 +10,27 @@ export interface FileTab {
   content: string;
   isChallenge?: boolean;
   challengeId?: string;
+}
+
+const DEFAULT_TAB: FileTab = {
+  id: newId(),
+  name: "ejemplo.psc",
+  content: STARTER_CODE,
+};
+
+function loadInitialState(): { tabs: FileTab[]; activeId: string } {
+  try {
+    const saved = loadWorkspace();
+    if (saved && saved.tabs.length > 0) {
+      return {
+        tabs: saved.tabs.map((t) => ({ ...t })),
+        activeId: saved.activeId,
+      };
+    }
+  } catch {
+    // ignore
+  }
+  return { tabs: [DEFAULT_TAB], activeId: DEFAULT_TAB.id };
 }
 
 export interface UseTabsReturn {
@@ -35,10 +57,9 @@ export interface UseTabsReturn {
 }
 
 export const useTabs = (): UseTabsReturn => {
-  const [tabs, setTabs] = useState<FileTab[]>([
-    { id: newId(), name: "ejemplo.psc", content: STARTER_CODE },
-  ]);
-  const [activeId, setActiveId] = useState(tabs[0].id);
+  const initial = loadInitialState();
+  const [tabs, setTabs] = useState<FileTab[]>(initial.tabs);
+  const [activeId, setActiveId] = useState(initial.activeId);
   const [editingTabId, setEditingTabId] = useState<string | null>(null);
   const [editingTabName, setEditingTabName] = useState("");
   const [tabPendingClose, setTabPendingClose] = useState<FileTab | null>(null);

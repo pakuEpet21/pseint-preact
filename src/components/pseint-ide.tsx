@@ -9,6 +9,7 @@ import { RightPanel } from "@/features/console/components/right-panel";
 import { SnippetPanel } from "@/components/snippet-panel";
 import { SettingsDialog } from "@/features/settings/components/settings-dialog";
 import { CloseConfirmDialog } from "@/features/editor/components/close-confirm-dialog";
+import { LevelUpModal } from "@/components/LevelUpModal";
 import type { CodeEditorHandle } from "@/components/code-editor";
 import { useTabs } from "@/features/editor/hooks/useTabs";
 import { useHistory } from "@/features/editor/hooks/useHistory";
@@ -18,7 +19,6 @@ import { useShare } from "@/features/share/hooks/useShare";
 import { useWorkspace } from "@/features/workspace/hooks/useWorkspace";
 import { formatPseint } from "@/lib/pseint/format";
 import { downloadFile, readFileAsText, newId } from "@/shared/lib/file-utils";
-import { loadWorkspace } from "@/lib/pseint/storage";
 import { getChallengeById, type ChallengeData } from "@/lib/pseint/challenges";
 import type { ConsoleLine } from "@/lib/pseint/interpreter";
 
@@ -116,26 +116,22 @@ export function PseintIDE() {
 
   const {
     challengeState,
-    restoreWorkspace,
     autoSave,
-    hydrated,
+    xp: _xp,
+    level,
+    showLevelUp,
+    pendingLevelUp,
+    setShowLevelUp,
+    addXp,
   } = useWorkspace(setSaveState);
 
   // Auto-save on tab changes
   useEffect(() => {
-    if (!hydrated.current) return;
     autoSave(tabs, activeId);
   }, [tabs, activeId, autoSave]);
 
-  // Restore workspace + shared code on mount
+  // Load shared code on mount
   useEffect(() => {
-    const saved = loadWorkspace();
-    if (saved && saved.tabs.length) {
-      restoreWorkspace(saved.tabs, saved.activeId);
-      _setLines([{ type: "info", text: "Se restauró tu trabajo guardado anteriormente." }]);
-    } else {
-      hydrated.current = true;
-    }
     void loadSharedCode().then((code) => {
       if (code) {
         openTab({ id: newId(), name: "compartido.psc", content: code });
@@ -188,6 +184,11 @@ export function PseintIDE() {
     const isChallengeTab = activeTab.isChallenge && activeTab.challengeId;
     const challenge = isChallengeTab ? getChallengeById(activeTab.challengeId!) : undefined;
 
+    // Track if this is a first-time completion before running
+    const isFirstCompletion = isChallengeTab
+      ? !challengeState[activeTab.challengeId!]?.completed
+      : false;
+
     const requestInput = (): Promise<string> => {
       return new Promise<string>((resolve) => {
         _inputResolverRef.current = (v) => {
@@ -197,17 +198,27 @@ export function PseintIDE() {
       });
     };
 
+    const handleChallengeComplete = (_challengeId: string, passed: boolean) => {
+      if (passed && isFirstCompletion) {
+        const { leveledUp } = addXp(40);
+        if (leveledUp) {
+          setShowLevelUp(true);
+        }
+      }
+    };
+
     await run(activeTab.content, {
       challenge,
       strictMode,
       strongTyping,
       debug,
+      onChallengeComplete: handleChallengeComplete,
     }, {
       appendLine,
       requestInput,
       signal: _abortRef.current,
     });
-  }, [activeTab, run, strictMode, strongTyping, appendLine, _inputResolverRef, _abortRef]);
+  }, [activeTab, run, strictMode, strongTyping, appendLine, _inputResolverRef, _abortRef, challengeState, addXp, setShowLevelUp]);
 
   const handleFormat = useCallback(() => {
     const formatted = formatPseint(activeTab.content);
@@ -402,6 +413,13 @@ export function PseintIDE() {
         onConfirm={confirmCloseTab}
         onCancel={cancelCloseTab}
       />
+
+      {showLevelUp && (
+        <LevelUpModal
+          level={pendingLevelUp ?? level}
+          onClose={() => setShowLevelUp(false)}
+        />
+      )}
 
       <input
         ref={fileInputRef}

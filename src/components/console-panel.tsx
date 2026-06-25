@@ -47,6 +47,9 @@ export function ConsolePanel({
       : `${consoleFontSize * 1.5}px`;
   }
 
+  const lineAnimation = simple ? "" : "animate-slideIn";
+  const lineDelay = (idx: number) => (!simple ? `animation-delay: ${idx * 40}ms` : "");
+
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">
       <div
@@ -71,8 +74,9 @@ export function ConsolePanel({
                 className={
                   simple
                     ? "py-0.5 text-destructive"
-                    : "my-1 rounded-md border border-destructive/30 bg-destructive/5 p-2"
+                    : `my-1 rounded-md border border-destructive/30 bg-destructive/5 p-2 ${lineAnimation}`
                 }
+                style={lineDelay(idx)}
               >
                 <div className="flex items-start gap-1.5">
                   <span
@@ -102,8 +106,9 @@ export function ConsolePanel({
                 className={
                   simple
                     ? "flex items-center justify-between gap-1.5 py-0.5 text-chart-2"
-                    : "my-1 flex items-center justify-between gap-2 border-l-4 border-l-chart-2 bg-chart-2/5 px-2 py-1 transition-colors hover:bg-chart-2/10"
+                    : `my-1 flex items-center justify-between gap-2 border-l-4 border-l-chart-2 bg-chart-2/5 px-2 py-1 transition-colors hover:bg-chart-2/10 ${lineAnimation}`
                 }
+                style={lineDelay(idx)}
                 onMouseEnter={() =>
                   line.variable &&
                   onHoverVariable?.({
@@ -143,8 +148,9 @@ export function ConsolePanel({
                 className={
                   simple
                     ? "flex items-center justify-between gap-1.5 py-0.5"
-                    : "my-1 flex items-center justify-between gap-2 border-l-4 border-l-primary bg-primary/5 px-2 py-1.5 transition-colors hover:bg-primary/10"
+                    : `my-1 flex items-center justify-between gap-2 border-l-4 border-l-primary bg-primary/5 px-2 py-1.5 transition-colors hover:bg-primary/10 ${lineAnimation}`
                 }
+                style={lineDelay(idx)}
                 onMouseEnter={() =>
                   line.variable &&
                   onHoverVariable?.({
@@ -181,14 +187,14 @@ export function ConsolePanel({
               className={
                 simple
                   ? "whitespace-pre-wrap text-muted-foreground py-0.5"
-                  : "my-1 whitespace-pre-wrap text-muted-foreground italic"
+                  : `my-1 whitespace-pre-wrap text-muted-foreground italic ${lineAnimation}`
               }
+              style={lineDelay(idx)}
             >
               {line.text}
             </div>
           );
         })}
-
         {waitingForInput && (
           <div
             className={

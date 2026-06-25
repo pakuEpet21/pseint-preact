@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "preact/hooks";
 import type { JSX } from "preact";
-import { X, Moon, Sun, Sparkles } from "lucide-react";
+import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface SettingsDialogProps {
@@ -47,7 +47,7 @@ function ThemeCard({
   label: string;
   active: boolean;
   onClick: () => void;
-  icon: JSX.Element;
+  icon?: JSX.Element;
   className?: string;
 }) {
   return (
@@ -175,34 +175,21 @@ export function SettingsDialog({
             <Section title="Apariencia">
               <div className="flex gap-3">
                 <ThemeCard
-                  label="Light"
-                  active={theme === "light"}
-                  onClick={() => setTheme("light")}
-                  icon={
-                    <span className="hidden md:flex size-8 items-center justify-center rounded-full bg-[oklch(0.97_0_0)] ring-1 ring-border">
-                      <Sun className=" size-4 text-foreground" />
-                    </span>
-                  }
+                  label="Dracula"
+                  active={theme === "dracula"}
+                  onClick={() => setTheme("dracula")}
                 />
                 <ThemeCard
                   label="Dark"
                   active={theme === "dark"}
                   onClick={() => setTheme("dark")}
-                  icon={
-                    <span className="hidden md:flex size-8 items-center justify-center rounded-full bg-[oklch(0.62_0.17_250)] ring-1 ring-border">
-                      <Moon className="size-4 text-white" />
-                    </span>
-                  }
+                 
                 />
-                <ThemeCard
-                  label="Dracula"
-                  active={theme === "dracula"}
-                  onClick={() => setTheme("dracula")}
-                  icon={
-                    <span className="hidden md:flex size-8 items-center justify-center rounded-full bg-[oklch(0.75_0.16_305)] ring-1 ring-border">
-                      <Sparkles className="size-4 text-white" />
-                    </span>
-                  }
+                 <ThemeCard
+                  label="Light"
+                  active={theme === "light"}
+                  onClick={() => setTheme("light")}
+                
                 />
               </div>
             </Section>

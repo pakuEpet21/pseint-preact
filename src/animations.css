@@ -61,6 +61,17 @@
   }
 }
 
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 @keyframes slide-in-from-right-2 {
   from {
     transform: translateX(8px);
@@ -112,4 +123,104 @@
 
 .slide-in-from-right-2 {
   animation-name: slide-in-from-right-2;
+}
+
+.animate-slideIn {
+  animation-name: slideIn;
+  animation-duration: 250ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  animation-fill-mode: both;
+}
+
+/* XP/Level system animations */
+@keyframes xpGrow {
+  from {
+    width: var(--xp-from);
+  }
+  to {
+    width: var(--xp-to);
+  }
+}
+
+@keyframes lvlPop {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes ringExpand {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+@keyframes starSpin {
+  0% {
+    transform: rotate(0deg) scale(0);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.2);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+  }
+}
+
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.animate-xpGrow {
+  animation-name: xpGrow;
+  animation-duration: 600ms;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  animation-fill-mode: both;
+}
+
+.animate-lvlPop {
+  animation-name: lvlPop;
+  animation-duration: 700ms;
+  animation-timing-function: cubic-bezier(0.2, 0.8, 0.3, 1);
+  animation-fill-mode: both;
+}
+
+.animate-ringExpand {
+  animation-name: ringExpand;
+  animation-duration: 1000ms;
+  animation-timing-function: ease-out;
+  animation-fill-mode: both;
+}
+
+.animate-starSpin {
+  animation-name: starSpin;
+  animation-duration: 800ms;
+  animation-timing-function: ease-out;
+  animation-fill-mode: both;
+}
+
+.animate-fadeSlideUp {
+  animation-name: fadeSlideUp;
+  animation-duration: 500ms;
+  animation-timing-function: ease-out;
+  animation-fill-mode: both;
 }
