@@ -58,7 +58,7 @@ export const challenges: ChallengeData[] = [
     description: "Indicá si el número es par o impar.",
     instruction: 'Usá la variable "parimpar" que contiene el número. Mostrá "PAR" o "IMPAR" según corresponda.',
     starterCode: "",
-    hint: "Si parimpar MOD 2 == 0 entonces es PAR, sino IMPAR",
+    hint: "Si parimpar MOD 2 = 0 entonces es PAR, sino IMPAR",
     hiddenVariable: "parimpar",
     testCases: [
       { input: "4", expectedOutput: "PAR" },
@@ -75,7 +75,7 @@ export function getChallengeById(id: string): ChallengeData | undefined {
 }
 
 /** Inject hidden variable AFTER the user's Definir lines so type is set first. */
-function prependVariable(
+export function prependVariable(
   code: string,
   hiddenVariable: string,
   input: string,
@@ -122,7 +122,7 @@ async function runWithInput(
   });
 }
 
-function validateSingle(
+export function validateSingle(
   validator: ChallengeData["validator"],
   outputText: string,
   input: string,
@@ -131,7 +131,7 @@ function validateSingle(
   const trimmed = outputText.trim();
 
   if (validator === "contiene") {
-    return trimmed.includes(expectedOutput);
+    return trimmed.toLowerCase().includes(expectedOutput.toLowerCase());
   }
 
   if (validator === "doble") {
@@ -143,8 +143,9 @@ function validateSingle(
   if (validator === "par-o-impar") {
     const upper = trimmed.toUpperCase();
     const num = parseInt(input, 10);
-    if (upper.includes("PAR")) return num % 2 === 0;
+    // Check IMPAR first since "IMPAR".includes("PAR") is true
     if (upper.includes("IMPAR")) return num % 2 !== 0;
+    if (upper.includes("PAR")) return num % 2 === 0;
     return false;
   }
 

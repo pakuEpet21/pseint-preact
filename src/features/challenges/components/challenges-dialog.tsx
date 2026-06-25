@@ -66,14 +66,7 @@ function ChallengeCard({
           >
             Reintentar
           </button>
-          <button
-            type="button"
-            onClick={onSelect}
-            className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:brightness-110"
-          >
-            <Trophy className="size-3.5" />
-            Ver solución
-          </button>
+       
         </div>
       </div>
     );
@@ -155,15 +148,13 @@ export function ChallengesDialog({
         >
           <div className="flex items-center justify-between border-b border-border px-6 py-4">
             <div className="flex items-center gap-3">
-              <div className="flex size-9 items-center justify-center rounded-xl bg-primary/10">
-                <Trophy className="size-5 text-primary" />
-              </div>
+              
               <div>
                 <h2 id="challenges-title" className="text-lg font-semibold">
                   Desafíos
                 </h2>
                 <p className="text-xs text-muted-foreground">
-                  Completá desafíos para practicar PSeInt
+                  Completá desafíos para aprender.
                 </p>
               </div>
             </div>

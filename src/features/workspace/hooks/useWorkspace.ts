@@ -3,9 +3,6 @@ import {
   saveWorkspace,
   loadChallengeState,
   saveChallengeState,
-  loadXpLevel,
-  saveXpLevel,
-  type ChallengeStore,
 } from "@/lib/pseint/storage";
 import { resetIdCounter, getIdCounter } from "@/shared/lib/file-utils";
 import type { FileTab } from "@/features/editor/hooks/useTabs";
@@ -13,14 +10,10 @@ import type { FileTab } from "@/features/editor/hooks/useTabs";
 export interface UseWorkspaceReturn {
   tabs: FileTab[];
   activeId: string;
-  challengeState: ChallengeStore;
-  xp: number;
-  level: number;
-  showLevelUp: boolean;
-  pendingLevelUp: number | null;
+  challengeState: Record<string, { completed: boolean; completedAt?: number }>;
   setTabs: React.Dispatch<React.SetStateAction<FileTab[]>>;
   setActiveId: (id: string) => void;
-  setChallengeState: React.Dispatch<React.SetStateAction<ChallengeStore>>;
+  setChallengeState: React.Dispatch<React.SetStateAction<Record<string, { completed: boolean; completedAt?: number }>>>;
   completeChallenge: (challengeId: string) => void;
   restoreWorkspace: (
     loadedTabs: FileTab[],
@@ -29,9 +22,6 @@ export interface UseWorkspaceReturn {
   autoSave: (tabs: FileTab[], activeId: string) => void;
   hydrated: React.MutableRefObject<boolean>;
   saveTimerRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>;
-  addXp: (amount: number) => { leveledUp: boolean; newLevel: number };
-  setShowLevelUp: (show: boolean) => void;
-  getXpForChallenge: () => number;
 }
 
 export const useWorkspace = (
@@ -39,11 +29,9 @@ export const useWorkspace = (
 ): UseWorkspaceReturn => {
   const [tabs, setTabs] = useState<FileTab[]>([]);
   const [activeId, setActiveId] = useState("");
-  const [challengeState, setChallengeState] = useState<ChallengeStore>({});
-  const [xp, setXp] = useState(0);
-  const [level, setLevel] = useState(1);
-  const [showLevelUp, setShowLevelUp] = useState(false);
-  const [pendingLevelUp, setPendingLevelUp] = useState<number | null>(null);
+  const [challengeState, setChallengeState] = useState<
+    Record<string, { completed: boolean; completedAt?: number }>
+  >({});
   const hydratedRef = useRef(true);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -54,45 +42,9 @@ export const useWorkspace = (
     }
   }, []);
 
-  useEffect(() => {
-    const saved = loadXpLevel();
-    setXp(saved.xp);
-    setLevel(saved.level);
-  }, []);
-
-  const addXp = useCallback((amount: number): { leveledUp: boolean; newLevel: number } => {
-    let newXp = xp;
-    let newLevel = level;
-    let leveledUp = false;
-
-    newXp += amount;
-    if (newXp >= 100) {
-      newXp -= 100;
-      newLevel += 1;
-      leveledUp = true;
-      setPendingLevelUp(newLevel);
-      setShowLevelUp(true);
-    }
-
-    setXp(newXp);
-    setLevel(newLevel);
-    saveXpLevel(newXp, newLevel);
-
-    return { leveledUp, newLevel };
-  }, [xp, level]);
-
-  const setShowLevelUpFn = useCallback((show: boolean) => {
-    setShowLevelUp(show);
-    if (!show) {
-      setPendingLevelUp(null);
-    }
-  }, []);
-
-  const getXpForChallenge = useCallback(() => 40, []);
-
   const completeChallenge = useCallback((challengeId: string) => {
     setChallengeState((prev) => {
-      const updated: ChallengeStore = {
+      const updated = {
         ...prev,
         [challengeId]: { completed: true, completedAt: Date.now() },
       };
@@ -137,10 +89,6 @@ export const useWorkspace = (
     tabs,
     activeId,
     challengeState,
-    xp,
-    level,
-    showLevelUp,
-    pendingLevelUp,
     setTabs,
     setActiveId,
     setChallengeState,
@@ -149,8 +97,5 @@ export const useWorkspace = (
     autoSave,
     hydrated: hydratedRef,
     saveTimerRef,
-    addXp,
-    setShowLevelUp: setShowLevelUpFn,
-    getXpForChallenge,
   };
 };

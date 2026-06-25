@@ -17,8 +17,8 @@ Compact context for OpenCode sessions on this repo.
 ## Verification
 
 - **No test runner is configured.** The only automated check is the build.
-- `npm run build` runs `tsc -b && vite build`. It must pass before considering a change complete.
-- `npm run dev` starts the Vite dev server.
+- `pnpm run build` runs `tsc -b && vite build`. It must pass before considering a change complete.
+- `pnpm run dev` starts the Vite dev server.
 
 ## TypeScript constraints
 

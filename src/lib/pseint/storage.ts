@@ -74,35 +74,4 @@ export function saveChallengeState(store: ChallengeStore): void {
   }
 }
 
-// XP/Level persistence
-const XP_STORAGE_KEY = "pseint:xp:v1";
-const LEVEL_STORAGE_KEY = "pseint:level:v1";
 
-export interface XpLevel {
-  xp: number;
-  level: number;
-}
-
-export function loadXpLevel(): XpLevel {
-  if (typeof window === "undefined") return { xp: 0, level: 1 };
-  try {
-    const xpRaw = window.localStorage.getItem(XP_STORAGE_KEY);
-    const levelRaw = window.localStorage.getItem(LEVEL_STORAGE_KEY);
-    const xp = xpRaw ? Number.parseInt(xpRaw, 10) : 0;
-    const level = levelRaw ? Number.parseInt(levelRaw, 10) : 1;
-    if (Number.isNaN(xp) || Number.isNaN(level)) return { xp: 0, level: 1 };
-    return { xp, level };
-  } catch {
-    return { xp: 0, level: 1 };
-  }
-}
-
-export function saveXpLevel(xp: number, level: number): void {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(XP_STORAGE_KEY, String(xp));
-    window.localStorage.setItem(LEVEL_STORAGE_KEY, String(level));
-  } catch {
-    // storage full or unavailable; ignore
-  }
-}

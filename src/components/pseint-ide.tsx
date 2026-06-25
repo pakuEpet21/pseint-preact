@@ -9,7 +9,7 @@ import { RightPanel } from "@/features/console/components/right-panel";
 import { SnippetPanel } from "@/components/snippet-panel";
 import { SettingsDialog } from "@/features/settings/components/settings-dialog";
 import { CloseConfirmDialog } from "@/features/editor/components/close-confirm-dialog";
-import { LevelUpModal } from "@/components/LevelUpModal";
+
 import { ConfettiOverlay } from "@/components/ConfettiOverlay";
 import type { CodeEditorHandle } from "@/components/code-editor";
 import { useTabs } from "@/features/editor/hooks/useTabs";
@@ -119,12 +119,7 @@ export function PseintIDE() {
   const {
     challengeState,
     autoSave,
-    xp: _xp,
-    level,
-    showLevelUp,
-    pendingLevelUp,
-    setShowLevelUp,
-    addXp,
+    completeChallenge,
   } = useWorkspace(setSaveState);
 
   // Auto-save on tab changes
@@ -200,13 +195,11 @@ export function PseintIDE() {
       });
     };
 
-    const handleChallengeComplete = (_challengeId: string, passed: boolean) => {
+    const handleChallengeComplete = (challengeId: string, passed: boolean) => {
       if (passed && isFirstCompletion) {
         setShowConfetti(true);
-        const { leveledUp } = addXp(40);
-        if (leveledUp) {
-          setShowLevelUp(true);
-        }
+        completeChallenge(challengeId);
+    
       }
     };
 
@@ -221,7 +214,7 @@ export function PseintIDE() {
       requestInput,
       signal: _abortRef.current,
     });
-  }, [activeTab, run, strictMode, strongTyping, appendLine, _inputResolverRef, _abortRef, challengeState, addXp, setShowLevelUp]);
+  }, [activeTab, run, strictMode, strongTyping, appendLine, _inputResolverRef, _abortRef, challengeState]);
 
   const handleFormat = useCallback(() => {
     const formatted = formatPseint(activeTab.content);
@@ -417,11 +410,8 @@ export function PseintIDE() {
         onCancel={cancelCloseTab}
       />
 
-      {showLevelUp && (
-        <LevelUpModal
-          level={pendingLevelUp ?? level}
-          onClose={() => setShowLevelUp(false)}
-        />
+      {showConfetti && (
+        <ConfettiOverlay onComplete={() => setShowConfetti(false)} />
       )}
 
       <input

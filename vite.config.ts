@@ -1,4 +1,5 @@
-import { defineConfig } from "vite";
+/// <reference types="vitest" />
+import { defineConfig } from "vitest/config";
 import preact from "@preact/preset-vite";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
@@ -12,5 +13,9 @@ export default defineConfig({
       react: "preact/compat",
       "react-dom": "preact/compat",
     },
+  },
+  test: {
+    environment: "node",
+    globals: true,
   },
 });
