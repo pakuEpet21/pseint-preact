@@ -10,6 +10,7 @@ import { SnippetPanel } from "@/components/snippet-panel";
 import { SettingsDialog } from "@/features/settings/components/settings-dialog";
 import { CloseConfirmDialog } from "@/features/editor/components/close-confirm-dialog";
 import { LevelUpModal } from "@/components/LevelUpModal";
+import { ConfettiOverlay } from "@/components/ConfettiOverlay";
 import type { CodeEditorHandle } from "@/components/code-editor";
 import { useTabs } from "@/features/editor/hooks/useTabs";
 import { useHistory } from "@/features/editor/hooks/useHistory";
@@ -27,6 +28,7 @@ export function PseintIDE() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [challengesOpen, setChallengesOpen] = useState(false);
   const [hoveredVariable, setHoveredVariable] = useState<{ name: string; line?: number } | null>(null);
+  const [showConfetti, setShowConfetti] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editorRef = useRef<CodeEditorHandle>(null);
@@ -200,6 +202,7 @@ export function PseintIDE() {
 
     const handleChallengeComplete = (_challengeId: string, passed: boolean) => {
       if (passed && isFirstCompletion) {
+        setShowConfetti(true);
         const { leveledUp } = addXp(40);
         if (leveledUp) {
           setShowLevelUp(true);
