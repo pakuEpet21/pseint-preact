@@ -386,6 +386,7 @@ export function PseintIDE() {
             onSaveRename={saveRename}
             onCancelRename={cancelRename}
             onClose={exitChallengesMode}
+            onOpenChallenges={() => setChallengesOpen(true)}
           />
 
           {/* Code editor */}

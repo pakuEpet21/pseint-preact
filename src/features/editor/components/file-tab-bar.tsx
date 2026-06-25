@@ -33,6 +33,7 @@ interface FileTabBarProps {
   onPrevious?: () => void;
   onNext?: () => void;
   onClose?: () => void;
+  onOpenChallenges?: () => void;
   renameInputRef: { current: HTMLInputElement | null };
   onSelectTab: (id: string) => void;
   onCloseTab: (id: string, e: TargetedEvent<HTMLButtonElement>) => void;
@@ -80,6 +81,7 @@ export const FileTabBar = ({
   onPrevious,
   onNext,
   onClose,
+  onOpenChallenges,
   renameInputRef,
   onSelectTab,
   onCloseTab,
@@ -125,9 +127,13 @@ export const FileTabBar = ({
             >
               <ChevronLeft className="size-4" />
             </button>
-            <span className="text-xs font-medium tabular-nums">
+            <button
+              type="button"
+              onClick={onOpenChallenges}
+              className="rounded-md bg-primary/10 px-2 py-1 text-xs font-medium tabular-nums text-primary transition-colors hover:bg-primary/20"
+            >
               {currentChallengeIndex + 1}/{challenges.length}
-            </span>
+            </button>
             <button
               type="button"
               onClick={onNext}

@@ -56,35 +56,7 @@ export function ChallengeBanner({
           
           <span className="text-md font-medium text-foreground">{challenge.title}</span>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={onOpenChallenges}
-            className="rounded-md bg-primary/10 px-2 py-1 text-xs text-primary transition-colors hover:bg-primary/20"
-          >
-            {currentIndex + 1}/{totalChallenges}
-          </button>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={onPrevious}
-              disabled={!canGoPrevious}
-              className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed"
-              title="Desafío anterior"
-            >
-              <ChevronLeft className="size-4" />
-            </button>
-            <button
-              onClick={onNext}
-              disabled={!canGoNext}
-              className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed"
-              title="Siguiente desafío"
-            >
-              <ChevronRight className="size-4" />
-            </button>
-          </div>
-          <span className="text-xs text-muted-foreground">
-            {lastUnlockedIndex + 1} desbloqueados
-          </span>
-        </div>
+        
       </div>
       <p className="text-sm text-foreground">{challenge.instruction}</p>
       <p className="text-xs text-muted-foreground">
