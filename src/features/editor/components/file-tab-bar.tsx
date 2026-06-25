@@ -20,6 +20,7 @@ interface FileTabBarProps {
   editingTabName: string;
   canUndo: boolean;
   canRedo: boolean;
+  isChallengesMode: boolean;
   renameInputRef: { current: HTMLInputElement | null };
   onSelectTab: (id: string) => void;
   onCloseTab: (id: string, e: TargetedEvent<HTMLButtonElement>) => void;
@@ -41,6 +42,7 @@ export const FileTabBar = ({
   editingTabName,
   canUndo,
   canRedo,
+  isChallengesMode,
   renameInputRef,
   onSelectTab,
   onCloseTab,
@@ -119,6 +121,7 @@ export const FileTabBar = ({
           <button
             onClick={onAddTab}
             className="shrink-0 cursor-pointer rounded-md px-2.5 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+            disabled={isChallengesMode}
             aria-label="Nueva pestaña"
           >
             <Plus className="size-4" />

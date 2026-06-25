@@ -1,4 +1,4 @@
-import { Trophy, ChevronLeft, ChevronRight } from "lucide-react";
+import { Trophy, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ChallengeData } from "@/lib/pseint/challenges";
 
@@ -9,6 +9,7 @@ interface ChallengeBannerProps {
   onOpenChallenges: () => void;
   onPrevious: () => void;
   onNext: () => void;
+  onClose: () => void;
 }
 
 export function ChallengeBanner({
@@ -18,6 +19,7 @@ export function ChallengeBanner({
   onOpenChallenges,
   onPrevious,
   onNext,
+  onClose,
 }: ChallengeBannerProps) {
   return (
     <div className="flex flex-col gap-2 border-b border-primary/30 bg-primary/5 px-4 py-3">
@@ -67,6 +69,13 @@ export function ChallengeBanner({
             className="rounded-md bg-primary px-2 py-1 text-xs font-medium text-primary-foreground transition-colors hover:brightness-110"
           >
             Ver desafíos
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md bg-primary px-2 py-1 text-xs font-medium text-primary-foreground transition-colors hover:brightness-110"
+          >
+            <X className="size-4" />
           </button>
         </div>
       </div>

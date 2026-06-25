@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "preact/hooks";
-import { X, Trophy, Lock, CheckCircle2, Lightbulb, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, Trophy, Lock, CheckCircle2, Lightbulb, ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 import { challenges, type ChallengeData } from "@/lib/pseint/challenges";
@@ -10,7 +10,6 @@ interface ChallengesDialogProps {
   onOpenChange: (open: boolean) => void;
   challengeState: ChallengeStore;
   onSelectChallenge: (challenge: ChallengeData) => void;
-  onResetChallenge: (challengeId: string) => void;
 }
 
 interface ChallengeCardProps {
@@ -18,7 +17,6 @@ interface ChallengeCardProps {
   state: { completed: boolean } | undefined;
   isUnlocked: boolean;
   onSelect: () => void;
-  onReset: () => void;
 }
 
 function ChallengeCard({
@@ -26,7 +24,6 @@ function ChallengeCard({
   state,
   isUnlocked,
   onSelect,
-  onReset,
 }: ChallengeCardProps) {
   if (!isUnlocked) {
     return (
@@ -47,7 +44,11 @@ function ChallengeCard({
 
   if (state?.completed) {
     return (
-      <div className="group relative rounded-xl border border-border bg-card p-4">
+      <button
+        type="button"
+        onClick={onSelect}
+        className="group w-full text-left rounded-xl border border-green-500/30 bg-green-500/5 p-4 transition-all hover:border-green-500 hover:bg-green-500/10"
+      >
         <div className="mb-2 flex items-center gap-2">
           <CheckCircle2 className="size-4 text-green-500" />
           <span className="font-medium text-green-500">{challenge.title}</span>
@@ -58,17 +59,11 @@ function ChallengeCard({
         <p className="mb-3 text-sm text-muted-foreground">
           {challenge.description}
         </p>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={onReset}
-            className="rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium transition-colors hover:bg-accent"
-          >
-            Reintentar
-          </button>
-       
+        <div className="flex items-center gap-1.5 text-xs text-green-500 opacity-0 transition-opacity group-hover:opacity-100">
+          <RotateCcw className="size-3.5" />
+          <span>Reintentando...</span>
         </div>
-      </div>
+      </button>
     );
   }
 
@@ -98,7 +93,6 @@ export function ChallengesDialog({
   onOpenChange,
   challengeState,
   onSelectChallenge,
-  onResetChallenge,
 }: ChallengesDialogProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const [pageIndex, setPageIndex] = useState(0);
@@ -233,7 +227,6 @@ export function ChallengesDialog({
                   state={challengeState[challenge.id]}
                   isUnlocked={isCurrentGroupUnlocked(pageIndex) && isUnlocked(globalIndex)}
                   onSelect={() => onSelectChallenge(challenge)}
-                  onReset={() => onResetChallenge(challenge.id)}
                 />
               );
             })}

@@ -31,7 +31,6 @@ interface ToolbarProps {
   onOpenSettings: () => void;
   onOpenChallenges: (open: boolean) => void;
   onSelectChallenge: (challenge: ChallengeData) => void;
-  onResetChallenge: (challengeId: string) => void;
 }
 
 export const Toolbar = ({
@@ -48,7 +47,6 @@ export const Toolbar = ({
   onOpenSettings,
   onOpenChallenges,
   onSelectChallenge,
-  onResetChallenge,
 }: ToolbarProps) => {
   return (
     <header className="flex items-center justify-between border-b border-border bg-sidebar px-4 py-2">
@@ -166,7 +164,6 @@ export const Toolbar = ({
           onOpenChange={onOpenChallenges}
           challengeState={challengeState}
           onSelectChallenge={onSelectChallenge}
-          onResetChallenge={onResetChallenge}
         />
 
         <button

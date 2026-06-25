@@ -53,6 +53,11 @@ export function PseintIDE() {
     requestCloseTab,
     confirmCloseTab,
     cancelCloseTab,
+    isChallengesMode,
+    enterChallengesMode,
+    exitChallengesMode,
+    currentChallengeId,
+    setCurrentChallenge,
   } = useTabs();
 
   const {
@@ -246,25 +251,17 @@ export function PseintIDE() {
   };
 
   const handleSelectChallenge = (challenge: ChallengeData) => {
-    const existing = tabs.find((t) => t.challengeId === challenge.id);
-    if (existing) {
-      setActiveId(existing.id);
+    if (isChallengesMode) {
+      setCurrentChallenge(challenge);
     } else {
-      openTab({
-        id: newId(),
-        name: `${challenge.title}.psc`,
-        content: challenge.starterCode,
-        isChallenge: true,
-        challengeId: challenge.id,
-      });
+      enterChallengesMode(challenge);
     }
-    setCurrentChallengeIndex(challenges.findIndex((c) => c.id === challenge.id));
     setChallengesOpen(false);
   };
 
   const getCurrentChallenge = (): ChallengeData | undefined => {
-    if (!activeTab.isChallenge || !activeTab.challengeId) return undefined;
-    return getChallengeById(activeTab.challengeId);
+    if (!currentChallengeId) return undefined;
+    return getChallengeById(currentChallengeId);
   };
 
   const handlePreviousChallenge = () => {
@@ -272,8 +269,8 @@ export function PseintIDE() {
     if (!current) return;
     const idx = challenges.findIndex((c) => c.id === current.id);
     if (idx > 0) {
-      const prev = challenges[idx - 1];
-      handleSelectChallenge(prev);
+      setCurrentChallengeIndex(idx - 1);
+      setCurrentChallenge(challenges[idx - 1]);
     }
   };
 
@@ -282,21 +279,9 @@ export function PseintIDE() {
     if (!current) return;
     const idx = challenges.findIndex((c) => c.id === current.id);
     if (idx < challenges.length - 1) {
-      const next = challenges[idx + 1];
-      handleSelectChallenge(next);
+      setCurrentChallengeIndex(idx + 1);
+      setCurrentChallenge(challenges[idx + 1]);
     }
-  };
-
-  const handleResetChallenge = (challengeId: string) => {
-    const challenge = getChallengeById(challengeId);
-    if (!challenge) return;
-    openTab({
-      id: newId(),
-      name: `${challenge.title}.psc`,
-      content: challenge.starterCode,
-      isChallenge: true,
-      challengeId: challenge.id,
-    });
   };
 
   const handleInsertSnippet = useCallback(
@@ -329,7 +314,6 @@ export function PseintIDE() {
         onOpenSettings={() => setSettingsOpen(true)}
         onOpenChallenges={setChallengesOpen}
         onSelectChallenge={handleSelectChallenge}
-        onResetChallenge={handleResetChallenge}
       />
 
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
@@ -364,6 +348,7 @@ export function PseintIDE() {
             editingTabName={editingTabName}
             canUndo={canUndo}
             canRedo={canRedo}
+            isChallengesMode={isChallengesMode}
             renameInputRef={renameInputRef as unknown as { current: HTMLInputElement | null }}
             onSelectTab={setActiveId}
             onCloseTab={requestCloseTab}
@@ -396,6 +381,7 @@ export function PseintIDE() {
             totalChallenges={challenges.length}
             onPrevious={handlePreviousChallenge}
             onNext={handleNextChallenge}
+            onClose={exitChallengesMode}
           />
         </section>
 

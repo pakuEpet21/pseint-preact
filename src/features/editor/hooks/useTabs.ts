@@ -3,6 +3,7 @@ import type { TargetedEvent } from "preact/compat";
 import { newId, stripFileExtension } from "@/shared/lib/file-utils";
 import { STARTER_CODE } from "@/lib/pseint/snippets";
 import { loadWorkspace } from "@/lib/pseint/storage";
+import type { ChallengeData } from "@/lib/pseint/challenges";
 
 export interface FileTab {
   id: string;
@@ -11,6 +12,16 @@ export interface FileTab {
   isChallenge?: boolean;
   challengeId?: string;
 }
+
+const DESAFIOS_TAB_ID = "___desafios___";
+
+const getDesafiosTab = (challenge: ChallengeData): FileTab => ({
+  id: DESAFIOS_TAB_ID,
+  name: "Desafíos",
+  content: challenge.starterCode,
+  isChallenge: true,
+  challengeId: challenge.id,
+});
 
 const DEFAULT_TAB: FileTab = {
   id: newId(),
@@ -54,6 +65,12 @@ export interface UseTabsReturn {
   requestCloseTab: (id: string, e: TargetedEvent<HTMLButtonElement>) => void;
   confirmCloseTab: () => void;
   cancelCloseTab: () => void;
+  // Challenge mode
+  isChallengesMode: boolean;
+  enterChallengesMode: (challenge: ChallengeData) => void;
+  exitChallengesMode: () => void;
+  currentChallengeId: string | null;
+  setCurrentChallenge: (challenge: ChallengeData) => void;
 }
 
 export const useTabs = (): UseTabsReturn => {
@@ -63,6 +80,9 @@ export const useTabs = (): UseTabsReturn => {
   const [editingTabId, setEditingTabId] = useState<string | null>(null);
   const [editingTabName, setEditingTabName] = useState("");
   const [tabPendingClose, setTabPendingClose] = useState<FileTab | null>(null);
+  const [hiddenTabs, setHiddenTabs] = useState<FileTab[]>([]);
+  const [isChallengesMode, setIsChallengesMode] = useState(false);
+  const [currentChallengeId, setCurrentChallengeId] = useState<string | null>(null);
 
   const activeTab = tabs.find((t) => t.id === activeId) ?? tabs[0];
 
@@ -86,8 +106,39 @@ export const useTabs = (): UseTabsReturn => {
     setTabs((prev) => prev.map((t) => (t.id === id ? { ...t, content } : t)));
   }, []);
 
+  const enterChallengesMode = useCallback((challenge: ChallengeData) => {
+    const desafiosTab = getDesafiosTab(challenge);
+    setHiddenTabs(tabs);
+    setTabs([desafiosTab]);
+    setActiveId(DESAFIOS_TAB_ID);
+    setCurrentChallengeId(challenge.id);
+    setIsChallengesMode(true);
+  }, [tabs]);
+
+  const exitChallengesMode = useCallback(() => {
+    setTabs(hiddenTabs.length > 0 ? hiddenTabs : [{ ...DEFAULT_TAB, id: newId() }]);
+    setHiddenTabs([]);
+    setCurrentChallengeId(null);
+    setIsChallengesMode(false);
+  }, [hiddenTabs]);
+
+  const setCurrentChallenge = useCallback((challenge: ChallengeData) => {
+    setTabs((prev) =>
+      prev.map((t) =>
+        t.id === DESAFIOS_TAB_ID
+          ? { ...t, content: challenge.starterCode, challengeId: challenge.id }
+          : t,
+      ),
+    );
+    setCurrentChallengeId(challenge.id);
+  }, []);
+
   const closeTab = useCallback(
     (id: string) => {
+      if (id === DESAFIOS_TAB_ID) {
+        exitChallengesMode();
+        return;
+      }
       setTabs((prev) => {
         if (prev.length === 1) return prev;
         const next = prev.filter((t) => t.id !== id);
@@ -95,7 +146,7 @@ export const useTabs = (): UseTabsReturn => {
         return next;
       });
     },
-    [activeId],
+    [activeId, exitChallengesMode],
   );
 
   const renameTab = useCallback((id: string) => {
@@ -164,5 +215,10 @@ export const useTabs = (): UseTabsReturn => {
     requestCloseTab,
     confirmCloseTab,
     cancelCloseTab,
+    isChallengesMode,
+    enterChallengesMode,
+    exitChallengesMode,
+    currentChallengeId,
+    setCurrentChallenge,
   };
 };

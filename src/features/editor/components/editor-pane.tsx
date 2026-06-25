@@ -21,6 +21,7 @@ interface EditorPaneProps {
   totalChallenges?: number;
   onPrevious?: () => void;
   onNext?: () => void;
+  onClose?: () => void;
 }
 
 export const EditorPane = ({
@@ -40,6 +41,7 @@ export const EditorPane = ({
   totalChallenges = 1,
   onPrevious,
   onNext,
+  onClose,
 }: EditorPaneProps) => {
   return (
     <section className="flex min-h-0 flex-1 flex-col border-b border-border lg:border-b-0">
@@ -53,6 +55,7 @@ export const EditorPane = ({
           onOpenChallenges={() => onOpenChallenges(true)}
           onPrevious={onPrevious ?? (() => {})}
           onNext={onNext ?? (() => {})}
+          onClose={onClose ?? (() => {})}
         />
       )}
       <div className="min-h-0 flex-1">
