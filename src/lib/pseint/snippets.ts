@@ -15,20 +15,25 @@ export const SNIPPET_CATEGORIES: SnippetCategory[] = [
     name: "Entrada/Salida",
     icon: "Terminal",
     snippets: [
+       {
+        label: "Mostrar",
+        description: "Mostrar texto en consola",
+        code: 'Mostrar ',
+      },
+      {
+        label: "Ingresar",
+        description: "Leer un valor del usuario",
+        code: "Ingresar ",
+      },
       {
         label: "Escribir",
         description: "Mostrar texto en consola",
-        code: 'Escribir "Hola Mundo"',
-      },
-      {
-        label: "Mostrar",
-        description: "Mostrar texto en consola",
-        code: 'Mostrar "Hola Mundo"',
+        code: 'Escribir ',
       },
       {
         label: "Leer",
         description: "Leer un valor del usuario",
-        code: "Leer x",
+        code: "Leer ",
       },
     ],
   },

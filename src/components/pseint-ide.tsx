@@ -21,6 +21,7 @@ import { useWorkspace } from "@/features/workspace/hooks/useWorkspace";
 import { formatPseint } from "@/lib/pseint/format";
 import { downloadFile, readFileAsText, newId } from "@/shared/lib/file-utils";
 import { challenges, getChallengeById, type ChallengeData } from "@/lib/pseint/challenges";
+import { loadActiveChallenge } from "@/lib/pseint/storage";
 import type { ConsoleLine } from "@/lib/pseint/interpreter";
 
 export function PseintIDE() {
@@ -126,6 +127,7 @@ export function PseintIDE() {
     challengeState,
     autoSave,
     completeChallenge,
+    saveActiveChallengeCode,
   } = useWorkspace(setSaveState);
 
   // Auto-save on tab changes
@@ -142,6 +144,28 @@ export function PseintIDE() {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Restore active challenge from localStorage on mount
+  useEffect(() => {
+    const saved = loadActiveChallenge();
+    if (saved) {
+      const challenge = getChallengeById(saved.challengeId);
+      if (challenge) {
+        enterChallengesMode(challenge, saved.code);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Auto-save challenge code when in challenge mode
+  useEffect(() => {
+    if (isChallengesMode && currentChallengeId) {
+      const challengeTab = tabs.find((t) => t.id === activeId);
+      if (challengeTab?.isChallenge) {
+        saveActiveChallengeCode(currentChallengeId, challengeTab.content);
+      }
+    }
+  }, [tabs, activeId, isChallengesMode, currentChallengeId, saveActiveChallengeCode]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -361,6 +385,7 @@ export function PseintIDE() {
             onEditNameChange={setEditingTabName}
             onSaveRename={saveRename}
             onCancelRename={cancelRename}
+            onClose={exitChallengesMode}
           />
 
           {/* Code editor */}

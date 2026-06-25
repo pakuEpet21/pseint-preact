@@ -3,6 +3,8 @@ import {
   saveWorkspace,
   loadChallengeState,
   saveChallengeState,
+  saveActiveChallenge,
+  clearActiveChallenge,
 } from "@/lib/pseint/storage";
 import { resetIdCounter, getIdCounter } from "@/shared/lib/file-utils";
 import type { FileTab } from "@/features/editor/hooks/useTabs";
@@ -20,6 +22,8 @@ export interface UseWorkspaceReturn {
     loadedActiveId: string,
   ) => void;
   autoSave: (tabs: FileTab[], activeId: string) => void;
+  saveActiveChallengeCode: (challengeId: string, code: string) => void;
+  clearActiveChallengeCode: () => void;
   hydrated: React.MutableRefObject<boolean>;
   saveTimerRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>;
 }
@@ -85,6 +89,14 @@ export const useWorkspace = (
     [setSaveState],
   );
 
+  const saveActiveChallengeCode = useCallback((challengeId: string, code: string) => {
+    saveActiveChallenge({ challengeId, code });
+  }, []);
+
+  const clearActiveChallengeCode = useCallback(() => {
+    clearActiveChallenge();
+  }, []);
+
   return {
     tabs,
     activeId,
@@ -95,6 +107,8 @@ export const useWorkspace = (
     completeChallenge,
     restoreWorkspace,
     autoSave,
+    saveActiveChallengeCode,
+    clearActiveChallengeCode,
     hydrated: hydratedRef,
     saveTimerRef,
   };

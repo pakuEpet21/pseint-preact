@@ -15,10 +15,10 @@ export interface FileTab {
 
 const DESAFIOS_TAB_ID = "___desafios___";
 
-const getDesafiosTab = (challenge: ChallengeData): FileTab => ({
+const getDesafiosTab = (challenge: ChallengeData, initialCode?: string): FileTab => ({
   id: DESAFIOS_TAB_ID,
   name: "Desafíos",
-  content: challenge.starterCode,
+  content: initialCode ?? challenge.starterCode,
   isChallenge: true,
   challengeId: challenge.id,
 });
@@ -67,7 +67,7 @@ export interface UseTabsReturn {
   cancelCloseTab: () => void;
   // Challenge mode
   isChallengesMode: boolean;
-  enterChallengesMode: (challenge: ChallengeData) => void;
+  enterChallengesMode: (challenge: ChallengeData, initialCode?: string) => void;
   exitChallengesMode: () => void;
   currentChallengeId: string | null;
   setCurrentChallenge: (challenge: ChallengeData) => void;
@@ -81,6 +81,7 @@ export const useTabs = (): UseTabsReturn => {
   const [editingTabName, setEditingTabName] = useState("");
   const [tabPendingClose, setTabPendingClose] = useState<FileTab | null>(null);
   const [hiddenTabs, setHiddenTabs] = useState<FileTab[]>([]);
+  const [hiddenActiveId, setHiddenActiveId] = useState<string | null>(null);
   const [isChallengesMode, setIsChallengesMode] = useState(false);
   const [currentChallengeId, setCurrentChallengeId] = useState<string | null>(null);
 
@@ -106,21 +107,25 @@ export const useTabs = (): UseTabsReturn => {
     setTabs((prev) => prev.map((t) => (t.id === id ? { ...t, content } : t)));
   }, []);
 
-  const enterChallengesMode = useCallback((challenge: ChallengeData) => {
-    const desafiosTab = getDesafiosTab(challenge);
+  const enterChallengesMode = useCallback((challenge: ChallengeData, initialCode?: string) => {
+    const desafiosTab = getDesafiosTab(challenge, initialCode);
     setHiddenTabs(tabs);
+    setHiddenActiveId(activeId);
     setTabs([desafiosTab]);
     setActiveId(DESAFIOS_TAB_ID);
     setCurrentChallengeId(challenge.id);
     setIsChallengesMode(true);
-  }, [tabs]);
+  }, [tabs, activeId]);
 
   const exitChallengesMode = useCallback(() => {
-    setTabs(hiddenTabs.length > 0 ? hiddenTabs : [{ ...DEFAULT_TAB, id: newId() }]);
+    const restoredTabs = hiddenTabs.length > 0 ? hiddenTabs : [{ ...DEFAULT_TAB, id: newId() }];
+    setTabs(restoredTabs);
+    setActiveId(hiddenActiveId ?? restoredTabs[0].id);
     setHiddenTabs([]);
+    setHiddenActiveId(null);
     setCurrentChallengeId(null);
     setIsChallengesMode(false);
-  }, [hiddenTabs]);
+  }, [hiddenTabs, hiddenActiveId]);
 
   const setCurrentChallenge = useCallback((challenge: ChallengeData) => {
     setTabs((prev) =>

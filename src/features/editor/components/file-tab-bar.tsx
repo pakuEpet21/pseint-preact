@@ -8,10 +8,17 @@ import {
   Redo2,
   PanelTopOpen,
   TextInitial,
+  ChevronLeft,
+  ChevronRight,
+  Trophy,
+  LogOut,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { stripFileExtension } from "@/shared/lib/file-utils";
+import { cn } from "@/lib/utils";
 import type { FileTab } from "@/features/editor/hooks/useTabs";
+import type { ChallengeStore } from "@/lib/pseint/storage";
+import { challenges } from "@/lib/pseint/challenges";
 
 interface FileTabBarProps {
   tabs: FileTab[];
@@ -21,6 +28,11 @@ interface FileTabBarProps {
   canUndo: boolean;
   canRedo: boolean;
   isChallengesMode: boolean;
+  currentChallengeIndex?: number;
+  challengeState?: ChallengeStore;
+  onPrevious?: () => void;
+  onNext?: () => void;
+  onClose?: () => void;
   renameInputRef: { current: HTMLInputElement | null };
   onSelectTab: (id: string) => void;
   onCloseTab: (id: string, e: TargetedEvent<HTMLButtonElement>) => void;
@@ -35,6 +47,26 @@ interface FileTabBarProps {
   onCancelRename: () => void;
 }
 
+/** Find the highest unlocked challenge index based on challengeState */
+function getLastUnlockedIndex(challengeState: ChallengeStore): number {
+  let lastUnlocked = 0;
+  for (let i = 0; i < challenges.length; i++) {
+    if (i < 3) {
+      lastUnlocked = i;
+      continue;
+    }
+    const firstThreeCompleted = challenges.slice(0, 3).every(
+      (c) => challengeState[c.id]?.completed,
+    );
+    if (firstThreeCompleted) {
+      lastUnlocked = i;
+    } else {
+      break;
+    }
+  }
+  return lastUnlocked;
+}
+
 export const FileTabBar = ({
   tabs,
   activeId,
@@ -43,6 +75,11 @@ export const FileTabBar = ({
   canUndo,
   canRedo,
   isChallengesMode,
+  currentChallengeIndex = 0,
+  challengeState,
+  onPrevious,
+  onNext,
+  onClose,
   renameInputRef,
   onSelectTab,
   onCloseTab,
@@ -62,10 +99,64 @@ export const FileTabBar = ({
     renameInputRef.current.select();
   }, [editingTabId, renameInputRef]);
 
+  const store = challengeState ?? {};
+  const lastUnlockedIndex = getLastUnlockedIndex(store);
+
   return (
     <div className="flex items-center border-b border-border bg-background">
-      <div className="flex flex-1 items-center overflow-x-auto">
-        {tabs.map((t) => (
+      {/* Challenge mode: show navigation controls */}
+      {isChallengesMode ? (
+        <div className="flex flex-1 items-center gap-2 px-3 py-2">
+          <div className="flex size-6 items-center justify-center rounded-full bg-primary/20">
+            <Trophy className="size-3.5 text-primary" />
+          </div>
+          <span className="text-sm font-medium text-primary">Desafíos</span>
+          <div className="mx-2 flex items-center gap-1">
+            <button
+              type="button"
+              onClick={onPrevious}
+              disabled={currentChallengeIndex === 0}
+              className={cn(
+                "rounded p-1 transition-colors",
+                currentChallengeIndex === 0
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:bg-accent",
+              )}
+            >
+              <ChevronLeft className="size-4" />
+            </button>
+            <span className="text-xs font-medium tabular-nums">
+              {currentChallengeIndex + 1}/{challenges.length}
+            </span>
+            <button
+              type="button"
+              onClick={onNext}
+              disabled={currentChallengeIndex >= lastUnlockedIndex}
+              className={cn(
+                "rounded p-1 transition-colors",
+                currentChallengeIndex >= lastUnlockedIndex
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:bg-accent",
+              )}
+            >
+              <ChevronRight className="size-4" />
+            </button>
+          </div>
+        
+          <div className="flex flex-1 justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex items-center justify-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-secundary transition-colors hover:bg-primary-foreground hover:brightness-110"
+            >
+              <LogOut className="size-4" />
+              Salir
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-1 items-center overflow-x-auto">
+          {tabs.map((t) => (
           <div
             key={t.id}
             onClick={() => onSelectTab(t.id)}
@@ -114,21 +205,23 @@ export const FileTabBar = ({
             </button>
           </div>
         ))}
-      </div>
+        </div>
+      )}
 
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button
-            onClick={onAddTab}
-            className="shrink-0 cursor-pointer rounded-md px-2.5 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
-            disabled={isChallengesMode}
-            aria-label="Nueva pestaña"
-          >
-            <Plus className="size-4" />
-          </button>
-        </TooltipTrigger>
-        <TooltipContent side="bottom">Nueva pestaña</TooltipContent>
-      </Tooltip>
+      {!isChallengesMode && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={onAddTab}
+              className="shrink-0 cursor-pointer rounded-md px-2.5 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+              aria-label="Nueva pestaña"
+            >
+              <Plus className="size-4" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Nueva pestaña</TooltipContent>
+        </Tooltip>
+      )}
 
       <Tooltip>
         <TooltipTrigger asChild>

@@ -26,7 +26,9 @@ export const challenges: ChallengeData[] = [
     title: "Saludo Personalizado",
     description: "Pedile al usuario su nombre y mostrale un saludo personalizado.",
     instruction: 'Usá la variable "nombre" para mostrar un saludo personalizado: "Hola, [nombre]"',
-    starterCode: "",
+    starterCode: `Algoritmo Saludo
+
+FinAlgoritmo`,
     hint: 'Puedes unir el saludo y el nombre usando la concatenación +',
     hiddenVariable: "nombre",
     testCases: [
@@ -41,7 +43,9 @@ export const challenges: ChallengeData[] = [
     title: "Doble de un Número",
     description: "Pedile al usuario un número y mostrale el doble.",
     instruction: 'Usá la variable "numero" para calcular y mostrár el doble.',
-    starterCode: "",
+    starterCode: `Algoritmo Doble
+
+FinAlgoritmo`,
     hint: "El doble de numero es: numero * 2",
     hiddenVariable: "numero",
     testCases: [
@@ -57,14 +61,18 @@ export const challenges: ChallengeData[] = [
     title: "¿Par o Impar?",
     description: "Indicá si el número es par o impar.",
     instruction: 'Usá la variable "parimpar" que contiene el número. Mostrá "PAR" o "IMPAR" según corresponda.',
-    starterCode: "",
+    starterCode: `Algoritmo ParImpar
+
+FinAlgoritmo`,
     hint: "Si parimpar MOD 2 = 0 entonces es PAR, sino IMPAR",
     hiddenVariable: "parimpar",
     testCases: [
       { input: "4", expectedOutput: "PAR" },
-      { input: "7", expectedOutput: "IMPAR" },
       { input: "0", expectedOutput: "PAR" },
+      { input: "-100", expectedOutput: "PAR" },
+      { input: "7", expectedOutput: "IMPAR" },
       { input: "9", expectedOutput: "IMPAR" },
+      { input: "-53", expectedOutput: "IMPAR" },
     ],
     validator: "par-o-impar",
   },
@@ -74,11 +82,7 @@ export const challenges: ChallengeData[] = [
     description: "Dados dos números, indicá cuál es el mayor.",
     instruction: 'Usá las variables "a" y "b". Mostrá "MAYOR" seguido del mayor valor.',
     starterCode: `Algoritmo Mayor
-Definir a, b Como Entero
-// Ingresá dos números
-a <- 10
-b <- 25
-// Tu código aquí
+
 FinAlgoritmo`,
     hint: "Usá Si...Entonces...Sino...FinSi para comparar los dos valores",
     hiddenVariable: "a",
@@ -95,11 +99,7 @@ FinAlgoritmo`,
     description: "Sumá todos los números desde 1 hasta el número indicado.",
     instruction: 'Usá la variable "n". Mostrá la suma total de 1 hasta n.',
     starterCode: `Algoritmo Suma
-Definir n, i, suma Como Entero
-// n contiene el número límite
-n <- 5
-suma <- 0
-// Tu código aquí: usa un Para o Mientras para sumar
+
 FinAlgoritmo`,
     hint: "Podés usar un bucle Para: Para i <- 1 Hasta n Hacer...FinPara",
     hiddenVariable: "n",
@@ -116,11 +116,7 @@ FinAlgoritmo`,
     description: "Calculá el factorial de un número (n!).",
     instruction: 'Usá la variable "n". Mostrá el factorial de n (producto de 1×2×...×n).',
     starterCode: `Algoritmo Factorial
-Definir n, i, resultado Como Entero
-// n contiene el número
-n <- 5
-resultado <- 1
-// Tu código aquí
+
 FinAlgoritmo`,
     hint: "El factorial de 5 es 5×4×3×2×1 = 120. Usá un bucle Para o Mientras",
     hiddenVariable: "n",

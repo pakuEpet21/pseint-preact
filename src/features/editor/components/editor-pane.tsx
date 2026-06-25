@@ -3,6 +3,7 @@ import { CodeEditor } from "@/components/code-editor";
 import { ChallengeBanner } from "@/features/challenges/components/challenge-banner";
 import { getChallengeById, challenges } from "@/lib/pseint/challenges";
 import type { FileTab } from "@/features/editor/hooks/useTabs";
+import type { ChallengeStore } from "@/lib/pseint/storage";
 
 interface EditorPaneProps {
   activeTab: FileTab;
@@ -19,6 +20,7 @@ interface EditorPaneProps {
   onOpenChallenges: (open: boolean) => void;
   currentChallengeIndex?: number;
   totalChallenges?: number;
+  challengeState?: ChallengeStore;
   onPrevious?: () => void;
   onNext?: () => void;
   onClose?: () => void;
@@ -39,6 +41,7 @@ export const EditorPane = ({
   onOpenChallenges,
   currentChallengeIndex = 0,
   totalChallenges = 1,
+  challengeState,
   onPrevious,
   onNext,
   onClose,
@@ -52,6 +55,7 @@ export const EditorPane = ({
           }
           currentIndex={currentChallengeIndex}
           totalChallenges={totalChallenges}
+          challengeState={challengeState}
           onOpenChallenges={() => onOpenChallenges(true)}
           onPrevious={onPrevious ?? (() => {})}
           onNext={onNext ?? (() => {})}

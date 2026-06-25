@@ -74,4 +74,41 @@ export function saveChallengeState(store: ChallengeStore): void {
   }
 }
 
+// Active challenge persistence (current challenge + user code)
+const ACTIVE_CHALLENGE_KEY = "pseint:active-challenge:v1";
+
+export interface ActiveChallengeState {
+  challengeId: string;
+  code: string;
+}
+
+export function loadActiveChallenge(): ActiveChallengeState | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(ACTIVE_CHALLENGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as ActiveChallengeState;
+  } catch {
+    return null;
+  }
+}
+
+export function saveActiveChallenge(state: ActiveChallengeState): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(ACTIVE_CHALLENGE_KEY, JSON.stringify(state));
+  } catch {
+    // storage full or unavailable; ignore
+  }
+}
+
+export function clearActiveChallenge(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(ACTIVE_CHALLENGE_KEY);
+  } catch {
+    // ignore
+  }
+}
+
 
